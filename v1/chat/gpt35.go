@@ -28,8 +28,9 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 		SetBody(ChatReq35).
 		SetDoNotParseResponse(true).
 		Post(chatgpt.ApiUrl)
-	if err != nil {
+	if err != nil || resp.StatusCode() != http.StatusOK {
 		v1.ErrorResponse(c, http.StatusInternalServerError, "", err)
+		logger.Logger.Error(err.Error())
 		return
 	}
 

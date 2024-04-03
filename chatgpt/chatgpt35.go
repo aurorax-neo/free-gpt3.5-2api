@@ -111,6 +111,7 @@ func (G *gpt35) getNewSession() error {
 		SetResult(G.Session).
 		Post(baseUrl + "/backend-anon/sentinel/chat-requirements")
 	if err != nil || resp.StatusCode() != 200 {
+		logger.Logger.Error(fmt.Sprintf("system: Failed to get new session: %v", err))
 		return fmt.Errorf("system: Failed to get new session ID: %v", err)
 	}
 	return nil
