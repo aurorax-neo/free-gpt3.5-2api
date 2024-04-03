@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"free-gpt3.5-2api/config"
 	"github.com/aurorax-neo/go-logger"
 	"github.com/gin-gonic/gin"
 )
@@ -21,6 +22,19 @@ func V1Request(c *gin.Context) {
 	c.Next()
 }
 
+func inArray(user string, list []string) bool {
+	// 如果 list 为空，直接返回 true
+	if len(list) == 0 {
+		return true
+	}
+	for _, v := range list {
+		if v == user {
+			return true
+		}
+	}
+	return false
+}
+
 // V1Auth 验证v1 api 的token
 func V1Auth(c *gin.Context) {
 	authToken := c.Request.Header.Get("Authorization")
@@ -33,7 +47,10 @@ func V1Auth(c *gin.Context) {
 		})
 		return
 	}
-	if authToken != "Bearer "+"" {
+	// 去除 authToken 前缀 Bearer
+	authToken = authToken[7:]
+	// 判断 authToken 是否在 config.CONFIG.AuthTokens 列表
+	if !inArray(authToken, config.CONFIG.AuthTokens) {
 		c.AbortWithStatusJSON(401, gin.H{
 			"message": "Incorrect API key provided: sk-4yNZz***************************************6mjw.",
 			"type":    "invalid_request_error",
@@ -47,8 +64,8 @@ func V1Auth(c *gin.Context) {
 
 // V1Response 响应中间件
 func V1Response(c *gin.Context) {
+	c.Next()
 	// 打印响应摘要 方法 url 状态码
 	infoStr := fmt.Sprint(" <- ", c.Request.Method, " ", c.Request.URL.String(), " - ", c.Writer.Status())
 	logger.Logger.Info(infoStr)
-	c.Next()
 }

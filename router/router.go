@@ -13,8 +13,8 @@ func SetRouter(router *gin.Engine) {
 	v1Router := router.Group("/v1")
 	v1Router.Use(middleware.V1Cors)
 	v1Router.Use(middleware.V1Request)
-	//v1Router.Use(middleware.V1Auth)
 	v1Router.Use(middleware.V1Response)
+	v1Router.Use(middleware.V1Auth)
 	v1Router.POST("/chat/completions", chat.Completions)
 }
 
