@@ -181,3 +181,4 @@ fabric.properties
 
 /logs/
 /.env
+/target/
