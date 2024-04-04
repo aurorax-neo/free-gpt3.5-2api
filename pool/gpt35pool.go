@@ -9,8 +9,10 @@ import (
 	"time"
 )
 
+const refreshInterval = 60
+
 func init() {
-	go GetGpt35PoolInstance()
+	GetGpt35PoolInstance()
 }
 
 var (
@@ -33,20 +35,28 @@ func GetGpt35PoolInstance() *Gpt35Pool {
 			Index:    -1,
 			MaxCount: config.CONFIG.PoolMaxCount,
 		}
-		gpt35PoolInstance.initGpt35Pool()
+		// 启动一个 goroutine 定时刷新 Gpt35Pool
+		go func() {
+			for {
+				gpt35PoolInstance.flushGpt35Pool()
+				time.Sleep(refreshInterval * time.Second)
+			}
+		}()
 	})
 	return gpt35PoolInstance
 }
 
-func (G *Gpt35Pool) initGpt35Pool() {
+func (G *Gpt35Pool) flushGpt35Pool() {
+	G.mutex.Lock()
+	defer G.mutex.Unlock()
 	for i := 0; i < G.MaxCount; i++ {
 		gpt35 := chat.NewGpt35()
 		if gpt35 != nil {
 			G.Gpt35s = append(G.Gpt35s, gpt35)
-			logger.Logger.Info(fmt.Sprint("Gpt35Pool add Gpt35 success, index: ", i))
+			logger.Logger.Info(fmt.Sprint("Gpt35Pool flush Gpt35 success, index: ", i))
 			continue
 		}
-		logger.Logger.Error(fmt.Sprint("Gpt35Pool add Gpt35 fail, index: ", i))
+		logger.Logger.Error(fmt.Sprint("Gpt35Pool flush Gpt35 fail, index: ", i))
 		i--
 		time.Sleep(1 * time.Second)
 	}
