@@ -115,6 +115,10 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Resp
 		err = json.Unmarshal([]byte(data), chatResp35)
 		// 仅处理assistant的消息
 		if chatResp35.Message.Author.Role == "assistant" {
+			// 如果不包含上一次的数据则不处理
+			if !strings.Contains(chatResp35.Message.Content.Parts[0], messageTemp) {
+				continue
+			}
 			// 仅处理第一个part
 			parts := chatResp35.Message.Content.Parts[0]
 			// 去除重复数据
@@ -211,6 +215,10 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Re
 		err = json.Unmarshal([]byte(data), chatResp35)
 		// 仅处理assistant的消息
 		if chatResp35.Message.Author.Role == "assistant" {
+			// 如果不包含上一次的数据则不处理
+			if !strings.Contains(chatResp35.Message.Content.Parts[0], content) {
+				continue
+			}
 			// 仅处理第一个part
 			content = chatResp35.Message.Content.Parts[0]
 			// 空白数据不处理
