@@ -3,6 +3,7 @@ package pool
 import (
 	"fmt"
 	"free-gpt3.5-2api/chat"
+	"free-gpt3.5-2api/config"
 	"github.com/aurorax-neo/go-logger"
 	"sync"
 	"time"
@@ -26,11 +27,11 @@ type Gpt35Pool struct {
 
 func GetGpt35PoolInstance() *Gpt35Pool {
 	once.Do(func() {
-		logger.Logger.Info("Gpt35Pool init")
+		logger.Logger.Info(fmt.Sprint("Gpt35Pool init, PoolMaxCount: ", config.CONFIG.PoolMaxCount))
 		gpt35PoolInstance = &Gpt35Pool{
 			Gpt35s:   make([]*chat.Gpt35, 0),
 			Index:    -1,
-			MaxCount: 2,
+			MaxCount: config.CONFIG.PoolMaxCount,
 		}
 		gpt35PoolInstance.initGpt35Pool()
 	})

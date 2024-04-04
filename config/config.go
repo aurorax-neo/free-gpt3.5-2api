@@ -5,14 +5,16 @@ import (
 	"github.com/joho/godotenv"
 	"net/url"
 	"os"
+	"strconv"
 )
 
 type config struct {
-	LogLevel   string
-	Bind       string
-	Port       string
-	Proxy      *url.URL
-	AuthTokens []string
+	LogLevel     string
+	Bind         string
+	Port         string
+	Proxy        *url.URL
+	AuthTokens   []string
+	PoolMaxCount int
 }
 
 var CONFIG *config
@@ -44,5 +46,16 @@ func init() {
 	} else {
 		//以,分割 AUTH_TOKEN 并且为每个AUTH_TOKEN前面加上Bearer
 		CONFIG.AuthTokens = common.SplitAndAddBearer(authTokens)
+	}
+	// POOL_MAX_COUNT
+	poolMaxCount := os.Getenv("POOL_MAX_COUNT")
+	var err error
+	if poolMaxCount == "" {
+		CONFIG.PoolMaxCount = 5
+	} else {
+		CONFIG.PoolMaxCount, err = strconv.Atoi(poolMaxCount)
+		if err != nil {
+			CONFIG.PoolMaxCount = 5
+		}
 	}
 }
