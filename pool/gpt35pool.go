@@ -25,6 +25,7 @@ type Gpt35Pool struct {
 	Index    int
 	MaxCount int
 	mutex    sync.Mutex
+	IsReady  bool
 }
 
 func GetGpt35PoolInstance() *Gpt35Pool {
@@ -34,11 +35,14 @@ func GetGpt35PoolInstance() *Gpt35Pool {
 			Gpt35s:   make([]*chat.Gpt35, 0),
 			Index:    -1,
 			MaxCount: config.CONFIG.PoolMaxCount,
+			IsReady:  false,
 		}
 		// 启动一个 goroutine 定时刷新 Gpt35Pool
 		go func() {
 			for {
-				gpt35PoolInstance.flushGpt35Pool()
+				if gpt35PoolInstance.IsReady {
+					gpt35PoolInstance.flushGpt35Pool()
+				}
 				time.Sleep(refreshInterval * time.Second)
 			}
 		}()
@@ -60,6 +64,7 @@ func (G *Gpt35Pool) flushGpt35Pool() {
 		i--
 		time.Sleep(1 * time.Second)
 	}
+	G.IsReady = true
 }
 
 func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
