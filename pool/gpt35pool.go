@@ -35,7 +35,7 @@ func GetGpt35PoolInstance() *Gpt35Pool {
 			Gpt35s:   make([]*chat.Gpt35, 0),
 			Index:    -1,
 			MaxCount: config.CONFIG.PoolMaxCount,
-			IsReady:  false,
+			IsReady:  true,
 		}
 		// 启动一个 goroutine 定时刷新 Gpt35Pool
 		go func() {
@@ -53,6 +53,7 @@ func GetGpt35PoolInstance() *Gpt35Pool {
 func (G *Gpt35Pool) flushGpt35Pool() {
 	G.mutex.Lock()
 	defer G.mutex.Unlock()
+	G.IsReady = false
 	for i := 0; i < G.MaxCount; i++ {
 		gpt35 := chat.NewGpt35()
 		if gpt35 != nil {
