@@ -3,7 +3,8 @@ package chat
 import (
 	"encoding/json"
 	"fmt"
-	"free-gpt3.5-2api/chatgpt"
+	"free-gpt3.5-2api/chat"
+	"free-gpt3.5-2api/pool"
 	v1 "free-gpt3.5-2api/v1"
 	"free-gpt3.5-2api/v1/chat/reqmodel"
 	"free-gpt3.5-2api/v1/chat/respmodel"
@@ -17,12 +18,19 @@ import (
 )
 
 func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
-	// 获取 chatgpt 实例
-	instance := chatgpt.GetGpt35Instance()
+	// 获取 chat 实例
+	instance := pool.GetGpt35PoolInstance().GetGpt35(3)
+	if instance == nil {
+		v1.ErrorResponse(c, http.StatusInternalServerError, "instance is nil", nil)
+		logger.Logger.Error("instance is nil")
+		pool.GetGpt35PoolInstance().RAGpt35AtIndex(pool.GetGpt35PoolInstance().Index)
+		return
+	}
+	logger.Logger.Info(fmt.Sprint("Gpt35  index: ", pool.GetGpt35PoolInstance().Index))
 	// 转换请求
 	ChatReq35 := reqmodel.ApiReq2ChatReq35(apiReq)
 	// 获取cookie
-	index, err := instance.Client.R().Get(chatgpt.BaseUrl)
+	index, err := instance.Client.R().Get(chat.BaseUrl)
 	instance.Client.SetCookies(index.Cookies())
 	// 发送请求
 	resp, err := instance.Client.R().
@@ -30,7 +38,7 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 		SetHeader("openai-sentinel-chat-requirements-token", instance.Session.Token).
 		SetBody(ChatReq35).
 		SetDoNotParseResponse(true).
-		Post(chatgpt.ApiUrl)
+		Post(chat.ApiUrl)
 	if err != nil {
 		v1.ErrorResponse(c, http.StatusInternalServerError, "", err)
 		logger.Logger.Error(err.Error())
@@ -38,10 +46,10 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	}
 	if resp.StatusCode() != http.StatusOK {
 		v1.ErrorResponse(c, resp.StatusCode(), resp.String(), nil)
-		logger.Logger.Error(fmt.Sprint(resp.StatusCode(), " - ", resp.String()))
+		logger.Logger.Error(fmt.Sprint(resp.StatusCode(), " - ", resp.RawResponse))
+		pool.GetGpt35PoolInstance().RAGpt35AtIndex(pool.GetGpt35PoolInstance().Index)
 		return
 	}
-
 	// 流式返回
 	if apiReq.Stream {
 		__CompletionsStream(c, apiReq, resp)
