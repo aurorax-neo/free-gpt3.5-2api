@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"free-gpt3.5-2api/config"
+	browser "github.com/EDDYCJY/fake-useragent"
 	"github.com/aurorax-neo/go-logger"
 	"github.com/go-resty/resty/v2"
 	"github.com/google/uuid"
@@ -12,8 +13,8 @@ import (
 	"time"
 )
 
-const baseUrl = "https://chat.openai.com"
-const ApiUrl = baseUrl + "/backend-api/conversation"
+const BaseUrl = "https://chat.openai.com"
+const ApiUrl = BaseUrl + "/backend-api/conversation"
 const refreshInterval = 60 // Interval to refresh token in ms
 const errorWait = 120      // Wait time in ms after an error
 
@@ -23,13 +24,13 @@ func init() {
 		for {
 			err := GetGpt35Instance().getNewSession()
 			if err != nil {
-				logger.Logger.Error("refreshing session failed, retrying in 2 minutes...")
+				logger.Logger.Error(fmt.Sprint("refreshing session failed, retrying in ", errorWait, " second..."))
 				logger.Logger.Error("if this error persists, your country may not be supported yet.")
 				logger.Logger.Error("if your country was the issue, please consider using a U.S. VPN.")
 				time.Sleep(errorWait * time.Second)
 				continue
 			}
-			logger.Logger.Info("Obtained new session.")
+			logger.Logger.Info(fmt.Sprint("refreshed session successfully, next refresh in ", refreshInterval, " second..."))
 			time.Sleep(refreshInterval * time.Second)
 		}
 	}()
@@ -68,7 +69,7 @@ func GetGpt35Instance() *gpt35 {
 			Client: resty.NewWithClient(&http.Client{
 				Transport: &http.Transport{
 					// 禁用长连接
-					//DisableKeepAlives: true,
+					DisableKeepAlives: true,
 					// 配置TLS设置，跳过证书验证
 					TLSClientConfig: &tls.Config{
 						InsecureSkipVerify: true,
@@ -81,8 +82,8 @@ func GetGpt35Instance() *gpt35 {
 		}
 		// 设置请求头
 		instance.Client.
-			SetHeader("origin", baseUrl).
-			SetHeader("referer", baseUrl).
+			SetHeader("origin", BaseUrl).
+			SetHeader("referer", BaseUrl).
 			SetHeader("accept", "*/*").
 			SetHeader("accept-language", "en-US,en;q=0.9").
 			SetHeader("cache-control", "no-cache").
@@ -101,15 +102,16 @@ func GetGpt35Instance() *gpt35 {
 }
 
 func (G *gpt35) getNewSession() error {
-	index, err := G.Client.R().Get(baseUrl)
-	G.Client.SetCookies(index.Cookies())
+	UA := browser.Random()
+	G.Client.SetHeader("User-Agent", UA)
 	// 生成新的设备 ID
 	G.Session.OaiDeviceId = uuid.New().String()
 	// 发送 POST 请求
 	resp, err := G.Client.R().
 		SetHeader("oai-device-id", G.Session.OaiDeviceId).
+		SetBody(`{"conversation_mode_kind":"primary_assistant"}`).
 		SetResult(G.Session).
-		Post(baseUrl + "/backend-anon/sentinel/chat-requirements")
+		Post(BaseUrl + "/backend-anon/sentinel/chat-requirements")
 	if err != nil || resp.StatusCode() != 200 {
 		logger.Logger.Error(fmt.Sprintf("system: Failed to get new session: %v", err))
 		return fmt.Errorf("system: Failed to get new session ID: %v", err)

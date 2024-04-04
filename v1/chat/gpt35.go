@@ -21,6 +21,9 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	instance := chatgpt.GetGpt35Instance()
 	// 转换请求
 	ChatReq35 := reqmodel.ApiReq2ChatReq35(apiReq)
+	// 获取cookie
+	index, err := instance.Client.R().Get(chatgpt.BaseUrl)
+	instance.Client.SetCookies(index.Cookies())
 	// 发送请求
 	resp, err := instance.Client.R().
 		SetHeader("oai-device-id", instance.Session.OaiDeviceId).
@@ -28,9 +31,14 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 		SetBody(ChatReq35).
 		SetDoNotParseResponse(true).
 		Post(chatgpt.ApiUrl)
-	if err != nil || resp.StatusCode() != http.StatusOK {
+	if err != nil {
 		v1.ErrorResponse(c, http.StatusInternalServerError, "", err)
 		logger.Logger.Error(err.Error())
+		return
+	}
+	if resp.StatusCode() != http.StatusOK {
+		v1.ErrorResponse(c, resp.StatusCode(), resp.String(), nil)
+		logger.Logger.Error(fmt.Sprint(resp.StatusCode(), " - ", resp.String()))
 		return
 	}
 
