@@ -114,7 +114,11 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Resp
 		}
 		chatResp35 := &respmodel.ChatResp35{}
 		err = json.Unmarshal([]byte(data), chatResp35)
-		logger.Logger.Info(fmt.Sprint("chatResp35: ", chatResp35.Message.Status, " - ", chatResp35.Message.Author.Role, " - ", chatResp35.Message.Content.Parts[0]))
+		// 脏数据不处理
+		if err != nil {
+			continue
+		}
+		logger.Logger.Info(fmt.Sprint("chatResp35: ", chatResp35.Message.Status, " - ", chatResp35.Message.Author.Role, " - ", data))
 		// 仅处理assistant的消息
 		if chatResp35.Message.Author.Role == "assistant" && (chatResp35.Message.Status == "in_progress" || handlingSigns) {
 			// handlingSigns 置为 true
@@ -214,6 +218,10 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Re
 		}
 		chatResp35 := &respmodel.ChatResp35{}
 		err = json.Unmarshal([]byte(data), chatResp35)
+		// 脏数据不处理
+		if err != nil {
+			continue
+		}
 		// 仅处理assistant的消息
 		if chatResp35.Message.Author.Role == "assistant" && (chatResp35.Message.Status == "in_progress" || handlingSigns) {
 			// 如果不包含上一次的数据则不处理
