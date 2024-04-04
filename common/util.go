@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func ParseUrl(link string) *url.URL {
@@ -15,6 +16,14 @@ func ParseUrl(link string) *url.URL {
 		return nil
 	}
 	return u
+}
+
+func SplitAndAddBearer(authTokens string) []string {
+	var authTokenList []string
+	for _, v := range strings.Split(authTokens, ",") {
+		authTokenList = append(authTokenList, "Bearer "+v)
+	}
+	return authTokenList
 }
 
 // GetAbsPathAndGenerate 获取绝对路径并生成文件或文件夹

@@ -63,8 +63,6 @@ func V1Auth(c *gin.Context) {
 		})
 		return
 	}
-	// 去除 authToken 前缀 Bearer
-	authToken = authToken[7:]
 	// 判断 authToken 是否在 config.CONFIG.AuthTokens 列表
 	if !inArray(authToken, config.CONFIG.AuthTokens) {
 		c.AbortWithStatusJSON(401, gin.H{

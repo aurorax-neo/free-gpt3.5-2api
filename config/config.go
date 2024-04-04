@@ -5,7 +5,6 @@ import (
 	"github.com/joho/godotenv"
 	"net/url"
 	"os"
-	"strings"
 )
 
 type config struct {
@@ -43,7 +42,7 @@ func init() {
 	if authTokens == "" {
 		CONFIG.AuthTokens = []string{}
 	} else {
-		//以,分割 AUTH_TOKEN
-		CONFIG.AuthTokens = strings.Split(authTokens, ",")
+		//以,分割 AUTH_TOKEN 并且为每个AUTH_TOKEN前面加上Bearer
+		CONFIG.AuthTokens = common.SplitAndAddBearer(authTokens)
 	}
 }

@@ -1,6 +1,7 @@
 package chat
 
 import (
+	v1 "free-gpt3.5-2api/v1"
 	"free-gpt3.5-2api/v1/chat/reqmodel"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -11,9 +12,7 @@ func Completions(c *gin.Context) {
 	apiReq := &reqmodel.ApiReq{}
 	err := c.BindJSON(apiReq)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"detail": "Invalid parameter",
-		})
+		v1.ErrorResponse(c, http.StatusBadRequest, "Invalid parameter", nil)
 		return
 	}
 	gpt35(c, apiReq)
