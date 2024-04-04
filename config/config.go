@@ -41,7 +41,7 @@ func init() {
 	// AUTH_TOKEN
 	authTokens := os.Getenv("AUTH_TOKENS")
 	if authTokens == "" {
-		CONFIG.AuthTokens = []string{"1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ"}
+		CONFIG.AuthTokens = []string{}
 	} else {
 		//以,分割 AUTH_TOKEN
 		CONFIG.AuthTokens = strings.Split(authTokens, ",")
