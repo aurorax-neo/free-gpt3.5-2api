@@ -118,7 +118,6 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Resp
 		if err != nil {
 			continue
 		}
-		logger.Logger.Info(fmt.Sprint("chatResp35: ", chatResp35.Message.Status, " - ", chatResp35.Message.Author.Role, " - ", data))
 		// 仅处理assistant的消息
 		if chatResp35.Message.Author.Role == "assistant" && (chatResp35.Message.Status == "in_progress" || handlingSigns) {
 			// handlingSigns 置为 true
