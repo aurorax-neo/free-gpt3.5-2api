@@ -7,10 +7,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Ping 测试接口
+func Ping(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"message": "pong",
+	})
+}
+
 // V1Cors 跨域中间件
 func V1Cors(c *gin.Context) {
 	// 允许跨域
-	c.Header("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept")
+	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	// 如果是OPTIONS请求，直接返回
+	if c.Request.Method == "OPTIONS" {
+		c.AbortWithStatus(204)
+		return
+	}
 	c.Next()
 }
 
