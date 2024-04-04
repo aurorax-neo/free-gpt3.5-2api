@@ -32,7 +32,7 @@ func GetGpt35PoolInstance() *Gpt35Pool {
 	once.Do(func() {
 		logger.Logger.Info(fmt.Sprint("Gpt35Pool init, PoolMaxCount: ", config.CONFIG.PoolMaxCount))
 		gpt35PoolInstance = &Gpt35Pool{
-			Gpt35s:   make([]*chat.Gpt35, 0),
+			Gpt35s:   make([]*chat.Gpt35, config.CONFIG.PoolMaxCount),
 			Index:    -1,
 			MaxCount: config.CONFIG.PoolMaxCount,
 			IsReady:  true,
@@ -57,7 +57,7 @@ func (G *Gpt35Pool) flushGpt35Pool() {
 	for i := 0; i < G.MaxCount; i++ {
 		gpt35 := chat.NewGpt35()
 		if gpt35 != nil {
-			G.Gpt35s = append(G.Gpt35s, gpt35)
+			G.Gpt35s[i] = gpt35
 			logger.Logger.Info(fmt.Sprint("Gpt35Pool flush Gpt35 success, index: ", i))
 			continue
 		}
