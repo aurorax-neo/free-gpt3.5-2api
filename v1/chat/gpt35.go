@@ -66,6 +66,7 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Resp
 	}(decoder)
 	// 响应id
 	id := v1.GenerateID(29)
+	handlingSigns := false
 	for {
 		event, err := decoder.Decode()
 		if err != nil {
@@ -113,12 +114,11 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Resp
 		}
 		chatResp35 := &respmodel.ChatResp35{}
 		err = json.Unmarshal([]byte(data), chatResp35)
+		logger.Logger.Info(fmt.Sprint("chatResp35: ", chatResp35.Message.Status, " - ", chatResp35.Message.Author.Role, " - ", chatResp35.Message.Content.Parts[0]))
 		// 仅处理assistant的消息
-		if chatResp35.Message.Author.Role == "assistant" {
-			// 如果不包含上一次的数据则不处理
-			if !strings.Contains(chatResp35.Message.Content.Parts[0], messageTemp) {
-				continue
-			}
+		if chatResp35.Message.Author.Role == "assistant" && (chatResp35.Message.Status == "in_progress" || handlingSigns) {
+			// handlingSigns 置为 true
+			handlingSigns = true
 			// 仅处理第一个part
 			parts := chatResp35.Message.Content.Parts[0]
 			// 去除重复数据
@@ -166,6 +166,7 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Re
 	defer func(decoder *eventsource.Decoder) {
 		_, _ = decoder.Decode()
 	}(decoder)
+	handlingSigns := false
 	for {
 		event, err := decoder.Decode()
 		if err != nil {
@@ -214,7 +215,7 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Re
 		chatResp35 := &respmodel.ChatResp35{}
 		err = json.Unmarshal([]byte(data), chatResp35)
 		// 仅处理assistant的消息
-		if chatResp35.Message.Author.Role == "assistant" {
+		if chatResp35.Message.Author.Role == "assistant" && (chatResp35.Message.Status == "in_progress" || handlingSigns) {
 			// 如果不包含上一次的数据则不处理
 			if !strings.Contains(chatResp35.Message.Content.Parts[0], content) {
 				continue
