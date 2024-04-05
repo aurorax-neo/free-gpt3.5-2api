@@ -63,8 +63,8 @@ func V1Auth(c *gin.Context) {
 		})
 		return
 	}
-	// 判断 authToken 是否在 config.CONFIG.AuthTokens 列表
-	if !inArray(authToken, config.CONFIG.AuthTokens) {
+	// 判断 authToken 是否在 config.CONFIG.AUTHORIZATIONS 列表
+	if !inArray(authToken, config.CONFIG.AUTHORIZATIONS) {
 		c.AbortWithStatusJSON(401, gin.H{
 			"message": "Incorrect API key provided: sk-4yNZz***************************************6mjw.",
 			"type":    "invalid_request_error",

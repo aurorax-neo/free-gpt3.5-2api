@@ -12,6 +12,11 @@ import (
 	"time"
 )
 
+// GetTimestampSecond 获取当前时间戳 + 指定 秒
+func GetTimestampSecond(second int) int64 {
+	return time.Now().Add(time.Second * time.Duration(second)).Unix()
+}
+
 func ParseUrl(link string) *url.URL {
 	if link == "" {
 		return nil

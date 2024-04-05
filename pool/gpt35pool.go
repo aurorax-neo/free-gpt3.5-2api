@@ -3,13 +3,12 @@ package pool
 import (
 	"fmt"
 	"free-gpt3.5-2api/chat"
+	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
 	"github.com/aurorax-neo/go-logger"
 	"sync"
 	"time"
 )
-
-const refreshInterval = 60
 
 func init() {
 	GetGpt35PoolInstance()
@@ -25,7 +24,6 @@ type Gpt35Pool struct {
 	Index    int
 	MaxCount int
 	mutex    sync.Mutex
-	IsReady  bool
 }
 
 func GetGpt35PoolInstance() *Gpt35Pool {
@@ -35,25 +33,33 @@ func GetGpt35PoolInstance() *Gpt35Pool {
 			Gpt35s:   make([]*chat.Gpt35, config.CONFIG.PoolMaxCount),
 			Index:    -1,
 			MaxCount: config.CONFIG.PoolMaxCount,
-			IsReady:  true,
 		}
+		gpt35PoolInstance.initGpt35Pool()
 		// 启动一个 goroutine 定时刷新 Gpt35Pool
 		go func() {
-			for {
-				if gpt35PoolInstance.IsReady {
-					gpt35PoolInstance.flushGpt35Pool()
+			// 遍历池子 g.Gpt35s
+			for i := 0; i < gpt35PoolInstance.MaxCount; i++ {
+				//判断是否为空
+				if gpt35PoolInstance.Gpt35s[i] == nil || //空的
+					gpt35PoolInstance.Gpt35s[i].MaxUseCount <= 0 || //可使用次数为0
+					gpt35PoolInstance.Gpt35s[i].IsLapse || //失效
+					gpt35PoolInstance.Gpt35s[i].ExpiresIn <= common.GetTimestampSecond(0) { //过期
+					//重新初始化
+					gpt35PoolInstance.raGpt35AtIndex(i)
 				}
-				time.Sleep(refreshInterval * time.Second)
+				if i == gpt35PoolInstance.MaxCount-1 {
+					i = -1
+					time.Sleep(1 * time.Second)
+				}
 			}
 		}()
 	})
 	return gpt35PoolInstance
 }
 
-func (G *Gpt35Pool) flushGpt35Pool() {
+func (G *Gpt35Pool) initGpt35Pool() {
 	G.mutex.Lock()
 	defer G.mutex.Unlock()
-	G.IsReady = false
 	for i := 0; i < G.MaxCount; i++ {
 		gpt35 := chat.NewGpt35()
 		if gpt35 != nil {
@@ -65,7 +71,6 @@ func (G *Gpt35Pool) flushGpt35Pool() {
 		i--
 		time.Sleep(1 * time.Second)
 	}
-	G.IsReady = true
 }
 
 func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
@@ -82,22 +87,19 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 	// 如果 Gpt35 实例为空且重试次数大于 0，则重新获取 Gpt35 实例
 	if gpt35 == nil && retry > 0 {
 		retry--
-		go G.RAGpt35AtIndex(G.Index)
+		go G.raGpt35AtIndex(G.Index)
 		return G.GetGpt35(retry)
 	}
+	gpt35.MaxUseCount--
 	return gpt35
 }
 
-func (G *Gpt35Pool) RAGpt35AtIndex(index int) {
+func (G *Gpt35Pool) raGpt35AtIndex(index int) {
 	G.mutex.Lock()
 	defer G.mutex.Unlock()
 	if index < 0 || index >= len(G.Gpt35s) {
 		return
 	}
-	gpt35 := chat.NewGpt35()
-	if gpt35 != nil {
-		G.Gpt35s[index] = gpt35
-		return
-	}
-	G.Gpt35s[index] = nil
+	G.Gpt35s[index] = chat.NewGpt35()
+	logger.Logger.Info(fmt.Sprint("Gpt35Pool update Gpt35, index: ", index))
 }

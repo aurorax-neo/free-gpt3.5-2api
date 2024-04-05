@@ -19,8 +19,11 @@ const ApiUrl = BaseUrl + "/backend-anon/conversation"
 const SessionUrl = BaseUrl + "/backend-anon/sentinel/chat-requirements"
 
 type Gpt35 struct {
-	Client  tlsClient.HttpClient
-	Session *session
+	Client      tlsClient.HttpClient
+	MaxUseCount int
+	ExpiresIn   int64
+	IsLapse     bool
+	Session     *session
 }
 
 type session struct {
@@ -54,8 +57,11 @@ func NewGpt35() *Gpt35 {
 		return nil
 	}
 	instance := &Gpt35{
-		Client:  client,
-		Session: &session{},
+		Client:      client,
+		MaxUseCount: config.CONFIG.AuthUseCount,
+		ExpiresIn:   common.GetTimestampSecond(config.CONFIG.AuthED),
+		IsLapse:     false,
+		Session:     &session{},
 	}
 	// 获取新的 session
 	err = instance.getNewSession()

@@ -23,9 +23,9 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	// 获取 chat 实例
 	instance := pool.GetGpt35PoolInstance().GetGpt35(3)
 	if instance == nil {
-		v1.ErrorResponse(c, http.StatusInternalServerError, "instance is nil", nil)
 		logger.Logger.Error("instance is nil")
-		pool.GetGpt35PoolInstance().RAGpt35AtIndex(pool.GetGpt35PoolInstance().Index)
+		instance.IsLapse = true
+		v1.ErrorResponse(c, http.StatusInternalServerError, "instance is nil", nil)
 		return
 	}
 	logger.Logger.Info(fmt.Sprint("Gpt35  index: ", pool.GetGpt35PoolInstance().Index))
@@ -55,9 +55,9 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 		_ = Body.Close()
 	}(response.Body)
 	if response.StatusCode != http.StatusOK {
-		v1.ErrorResponse(c, response.StatusCode, "", nil)
 		logger.Logger.Error(fmt.Sprint(response.StatusCode))
-		pool.GetGpt35PoolInstance().RAGpt35AtIndex(pool.GetGpt35PoolInstance().Index)
+		instance.IsLapse = true
+		v1.ErrorResponse(c, response.StatusCode, "", nil)
 		return
 	}
 	// 流式返回

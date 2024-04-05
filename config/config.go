@@ -9,12 +9,14 @@ import (
 )
 
 type config struct {
-	LogLevel     string
-	Bind         string
-	Port         string
-	Proxy        *url.URL
-	AuthTokens   []string
-	PoolMaxCount int
+	LogLevel       string
+	Bind           string
+	Port           string
+	Proxy          *url.URL
+	AUTHORIZATIONS []string
+	PoolMaxCount   int
+	AuthED         int
+	AuthUseCount   int
 }
 
 var CONFIG *config
@@ -40,12 +42,12 @@ func init() {
 		CONFIG.Proxy = common.ParseUrl(proxy)
 	}
 	// AUTH_TOKEN
-	authTokens := os.Getenv("AUTH_TOKENS")
-	if authTokens == "" {
-		CONFIG.AuthTokens = []string{}
+	authorizations := os.Getenv("AUTHORIZATIONS")
+	if authorizations == "" {
+		CONFIG.AUTHORIZATIONS = []string{}
 	} else {
 		//以,分割 AUTH_TOKEN 并且为每个AUTH_TOKEN前面加上Bearer
-		CONFIG.AuthTokens = common.SplitAndAddBearer(authTokens)
+		CONFIG.AUTHORIZATIONS = common.SplitAndAddBearer(authorizations)
 	}
 	// POOL_MAX_COUNT
 	poolMaxCount := os.Getenv("POOL_MAX_COUNT")
@@ -56,6 +58,26 @@ func init() {
 		CONFIG.PoolMaxCount, err = strconv.Atoi(poolMaxCount)
 		if err != nil {
 			CONFIG.PoolMaxCount = 5
+		}
+	}
+	// AUTH_ED
+	authED := os.Getenv("AUTH_ED")
+	if authED == "" {
+		CONFIG.AuthED = 180
+	} else {
+		CONFIG.AuthED, err = strconv.Atoi(authED)
+		if err != nil {
+			CONFIG.AuthED = 180
+		}
+	}
+	// AUTH_USE_COUNT
+	authUseCount := os.Getenv("AUTH_USE_COUNT")
+	if authUseCount == "" {
+		CONFIG.AuthUseCount = 5
+	} else {
+		CONFIG.AuthUseCount, err = strconv.Atoi(authUseCount)
+		if err != nil {
+			CONFIG.AuthUseCount = 5
 		}
 	}
 }
