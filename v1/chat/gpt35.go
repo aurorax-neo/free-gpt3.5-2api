@@ -46,14 +46,14 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	request.Header.Set("openai-sentinel-chat-requirements-token", instance.Session.Token)
 	// 发送请求
 	response, err := instance.Client.Do(request)
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(response.Body)
 	if err != nil {
 		v1.ErrorResponse(c, http.StatusInternalServerError, "", err)
 		logger.Logger.Error(err.Error())
 		return
 	}
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(response.Body)
 	if response.StatusCode != http.StatusOK {
 		v1.ErrorResponse(c, response.StatusCode, "", nil)
 		logger.Logger.Error(fmt.Sprint(response.StatusCode))

@@ -79,12 +79,12 @@ func (G *Gpt35) getNewSession() error {
 	request.Header.Set("oai-device-id", G.Session.OaiDeviceId)
 	// 发送 POST 请求
 	response, err := G.Client.Do(request)
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(response.Body)
 	if err != nil || response.StatusCode != fhttp.StatusOK {
 		return fmt.Errorf("system: Failed to get new session: %v", err)
 	}
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(response.Body)
 	if err := json.NewDecoder(response.Body).Decode(&G.Session); err != nil {
 		return nil
 	}
