@@ -27,7 +27,7 @@ func init() {
 	// Bind
 	CONFIG.Bind = os.Getenv("BIND")
 	if CONFIG.Bind == "" {
-		CONFIG.Bind = "127.0.0.1"
+		CONFIG.Bind = "0.0.0.0"
 	}
 	// PORT
 	CONFIG.Port = os.Getenv("PORT")
@@ -37,7 +37,7 @@ func init() {
 	// PROXY
 	proxy := os.Getenv("PROXY")
 	if proxy == "" {
-		CONFIG.Proxy = nil
+		CONFIG.Proxy = &url.URL{}
 	} else {
 		CONFIG.Proxy = common.ParseUrl(proxy)
 	}
