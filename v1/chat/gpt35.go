@@ -4,14 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"free-gpt3.5-2api/chat"
+	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/pool"
 	v1 "free-gpt3.5-2api/v1"
 	"free-gpt3.5-2api/v1/chat/reqmodel"
 	"free-gpt3.5-2api/v1/chat/respmodel"
 	"github.com/aurorax-neo/go-logger"
+	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/gin-gonic/gin"
-	rv2 "github.com/go-resty/resty/v2"
 	"github.com/launchdarkly/eventsource"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -29,38 +31,46 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	logger.Logger.Info(fmt.Sprint("Gpt35  index: ", pool.GetGpt35PoolInstance().Index))
 	// 转换请求
 	ChatReq35 := reqmodel.ApiReq2ChatReq35(apiReq)
-	// 获取cookie
-	index, err := instance.Client.R().Get(chat.BaseUrl)
-	instance.Client.SetCookies(index.Cookies())
+	// 请求参数
+	body, err := common.Struct2BytesBuffer(ChatReq35)
+	if err != nil {
+		v1.ErrorResponse(c, http.StatusInternalServerError, "", err)
+		logger.Logger.Error(err.Error())
+		return
+
+	}
+	// 生成请求
+	request, err := instance.NewRequest(fhttp.MethodPost, chat.ApiUrl, body)
+	// 设置请求头
+	request.Header.Set("oai-device-id", instance.Session.OaiDeviceId)
+	request.Header.Set("openai-sentinel-chat-requirements-token", instance.Session.Token)
 	// 发送请求
-	resp, err := instance.Client.R().
-		SetHeader("oai-device-id", instance.Session.OaiDeviceId).
-		SetHeader("openai-sentinel-chat-requirements-token", instance.Session.Token).
-		SetBody(ChatReq35).
-		SetDoNotParseResponse(true).
-		Post(chat.ApiUrl)
+	response, err := instance.Client.Do(request)
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(response.Body)
 	if err != nil {
 		v1.ErrorResponse(c, http.StatusInternalServerError, "", err)
 		logger.Logger.Error(err.Error())
 		return
 	}
-	if resp.StatusCode() != http.StatusOK {
-		v1.ErrorResponse(c, resp.StatusCode(), resp.String(), nil)
-		logger.Logger.Error(fmt.Sprint(resp.StatusCode(), " - ", resp.RawResponse))
+	if response.StatusCode != http.StatusOK {
+		v1.ErrorResponse(c, response.StatusCode, "", nil)
+		logger.Logger.Error(fmt.Sprint(response.StatusCode))
 		pool.GetGpt35PoolInstance().RAGpt35AtIndex(pool.GetGpt35PoolInstance().Index)
 		return
 	}
 	// 流式返回
 	if apiReq.Stream {
-		__CompletionsStream(c, apiReq, resp)
+		__CompletionsStream(c, apiReq, response)
 	} else { // 非流式回应
-		__CompletionsNoStream(c, apiReq, resp)
+		__CompletionsNoStream(c, apiReq, response)
 	}
 }
 
-func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Response) {
+func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Response) {
 	messageTemp := ""
-	decoder := eventsource.NewDecoder(resp.RawResponse.Body)
+	decoder := eventsource.NewDecoder(resp.Body)
 	defer func(decoder *eventsource.Decoder) {
 		_, _ = decoder.Decode()
 	}(decoder)
@@ -101,7 +111,7 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Resp
 			// model
 			apiRespObj.Model = apiReq.Model
 			// 生成响应
-			bytes, err := v1.Obj2Bytes(apiRespObj)
+			bytes, err := common.Struct2Bytes(apiRespObj)
 			if err != nil {
 				logger.Logger.Error(err.Error())
 				continue
@@ -150,7 +160,7 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Resp
 			// model
 			apiRespObj.Model = apiReq.Model
 			// 生成响应
-			bytes, err := v1.Obj2Bytes(apiRespObj)
+			bytes, err := common.Struct2Bytes(apiRespObj)
 			if err != nil {
 				logger.Logger.Error(err.Error())
 				continue
@@ -163,9 +173,9 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Resp
 	}
 }
 
-func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Response) {
+func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Response) {
 	content := ""
-	decoder := eventsource.NewDecoder(resp.RawResponse.Body)
+	decoder := eventsource.NewDecoder(resp.Body)
 	defer func(decoder *eventsource.Decoder) {
 		_, _ = decoder.Decode()
 	}(decoder)
@@ -223,6 +233,8 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *rv2.Re
 		}
 		// 仅处理assistant的消息
 		if chatResp35.Message.Author.Role == "assistant" && (chatResp35.Message.Status == "in_progress" || handlingSigns) {
+			// handlingSigns 置为 true
+			handlingSigns = true
 			// 如果不包含上一次的数据则不处理
 			if !strings.Contains(chatResp35.Message.Content.Parts[0], content) {
 				continue

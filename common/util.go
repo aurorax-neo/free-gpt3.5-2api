@@ -1,10 +1,15 @@
 package common
 
 import (
+	"bytes"
+	"encoding/json"
+	jsoniter "github.com/json-iterator/go"
+	"math/rand"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func ParseUrl(link string) *url.URL {
@@ -18,12 +23,42 @@ func ParseUrl(link string) *url.URL {
 	return u
 }
 
+func Struct2BytesBuffer(v interface{}) (*bytes.Buffer, error) {
+	data := new(bytes.Buffer)
+	err := json.NewEncoder(data).Encode(v)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func Struct2Bytes(v interface{}) ([]byte, error) {
+	// 创建一个jsonIter的Encoder
+	configCompatibleWithStandardLibrary := jsoniter.ConfigCompatibleWithStandardLibrary
+	// 将结构体转换为JSON文本并保持顺序
+	bytes_, err := configCompatibleWithStandardLibrary.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	return bytes_, nil
+}
+
 func SplitAndAddBearer(authTokens string) []string {
 	var authTokenList []string
 	for _, v := range strings.Split(authTokens, ",") {
 		authTokenList = append(authTokenList, "Bearer "+v)
 	}
 	return authTokenList
+}
+
+func RandomLanguage() string {
+	// 初始化随机数生成器
+	rand.Seed(time.Now().UnixNano())
+	// 语言列表
+	languages := []string{"af", "am", "ar-sa", "as", "az-Latn", "be", "bg", "bn-BD", "bn-IN", "bs", "ca", "ca-ES-valencia", "cs", "cy", "da", "de", "de-de", "el", "en-GB", "en-US", "es", "es-ES", "es-US", "es-MX", "et", "eu", "fa", "fi", "fil-Latn", "fr", "fr-FR", "fr-CA", "ga", "gd-Latn", "gl", "gu", "ha-Latn", "he", "hi", "hr", "hu", "hy", "id", "ig-Latn", "is", "it", "it-it", "ja", "ka", "kk", "km", "kn", "ko", "kok", "ku-Arab", "ky-Cyrl", "lb", "lt", "lv", "mi-Latn", "mk", "ml", "mn-Cyrl", "mr", "ms", "mt", "nb", "ne", "nl", "nl-BE", "nn", "nso", "or", "pa", "pa-Arab", "pl", "prs-Arab", "pt-BR", "pt-PT", "qut-Latn", "quz", "ro", "ru", "rw", "sd-Arab", "si", "sk", "sl", "sq", "sr-Cyrl-BA", "sr-Cyrl-RS", "sr-Latn-RS", "sv", "sw", "ta", "te", "tg-Cyrl", "th", "ti", "tk-Latn", "tn", "tr", "tt-Cyrl", "ug-Arab", "uk", "ur", "uz-Latn", "vi", "wo", "xh", "yo-Latn", "zh-Hans", "zh-Hant", "zu"}
+	// 随机选择一个语言
+	randomIndex := rand.Intn(len(languages))
+	return languages[randomIndex]
 }
 
 // GetAbsPathAndGenerate 获取绝对路径并生成文件或文件夹

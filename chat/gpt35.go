@@ -1,13 +1,17 @@
 package chat
 
 import (
-	"crypto/tls"
+	"encoding/json"
 	"fmt"
+	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
 	browser "github.com/EDDYCJY/fake-useragent"
-	"github.com/go-resty/resty/v2"
+	fhttp "github.com/bogdanfinn/fhttp"
+	tlsClient "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/google/uuid"
-	"net/http"
+	"io"
+	"strings"
 )
 
 const BaseUrl = "https://chat.openai.com"
@@ -15,7 +19,7 @@ const ApiUrl = BaseUrl + "/backend-anon/conversation"
 const SessionUrl = BaseUrl + "/backend-anon/sentinel/chat-requirements"
 
 type Gpt35 struct {
-	Client  *resty.Client
+	Client  tlsClient.HttpClient
 	Session *session
 }
 
@@ -37,40 +41,24 @@ type turnstile struct {
 }
 
 func NewGpt35() *Gpt35 {
+	jar := tlsClient.NewCookieJar()
+	options := []tlsClient.HttpClientOption{
+		tlsClient.WithTimeoutSeconds(300),
+		tlsClient.WithClientProfile(profiles.Okhttp4Android13),
+		tlsClient.WithNotFollowRedirects(),
+		tlsClient.WithCookieJar(jar),
+		tlsClient.WithProxyUrl(config.CONFIG.Proxy.String()),
+	}
+	client, err := tlsClient.NewHttpClient(tlsClient.NewNoopLogger(), options...)
+	if err != nil {
+		return nil
+	}
 	instance := &Gpt35{
-		Client: resty.NewWithClient(&http.Client{
-			Transport: &http.Transport{
-				// 禁用长连接
-				DisableKeepAlives: true,
-				// 配置TLS设置，跳过证书验证
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-				//配置代理
-				Proxy: http.ProxyURL(config.CONFIG.Proxy),
-			},
-		}),
+		Client:  client,
 		Session: &session{},
 	}
-	// 设置请求头
-	instance.Client.
-		SetHeader("origin", BaseUrl).
-		SetHeader("referer", BaseUrl).
-		SetHeader("accept", "*/*").
-		SetHeader("accept-language", "en-US,en;q=0.9").
-		SetHeader("cache-control", "no-cache").
-		SetHeader("content-type", "application/json").
-		SetHeader("oai-language", "en-US").
-		SetHeader("pragma", "no-cache").
-		SetHeader("sec-ch-ua", `"Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123"`).
-		SetHeader("sec-ch-ua-mobile", "?0").
-		SetHeader("sec-ch-ua-platform", "Windows").
-		SetHeader("sec-fetch-dest", "empty").
-		SetHeader("sec-fetch-mode", "cors").
-		SetHeader("sec-fetch-site", "same-origin").
-		SetHeader("User-Agent", browser.Random())
 	// 获取新的 session
-	err := instance.getNewSession()
+	err = instance.getNewSession()
 	if err != nil {
 		return nil
 	}
@@ -80,14 +68,46 @@ func NewGpt35() *Gpt35 {
 func (G *Gpt35) getNewSession() error {
 	// 生成新的设备 ID
 	G.Session.OaiDeviceId = uuid.New().String()
+	// 设置请求体
+	body := strings.NewReader(`{"conversation_mode_kind":"primary_assistant"}`)
+	// 创建请求
+	request, err := G.NewRequest("POST", SessionUrl, body)
+	if err != nil {
+		return nil
+	}
+	// 设置请求头
+	request.Header.Set("oai-device-id", G.Session.OaiDeviceId)
 	// 发送 POST 请求
-	resp, err := G.Client.R().
-		SetHeader("oai-device-id", G.Session.OaiDeviceId).
-		SetBody(`{"conversation_mode_kind":"primary_assistant"}`).
-		SetResult(G.Session).
-		Post(SessionUrl)
-	if err != nil || resp.StatusCode() != 200 {
+	response, err := G.Client.Do(request)
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(response.Body)
+	if err != nil || response.StatusCode != fhttp.StatusOK {
 		return fmt.Errorf("system: Failed to get new session: %v", err)
 	}
+	if err := json.NewDecoder(response.Body).Decode(&G.Session); err != nil {
+		return nil
+	}
 	return nil
+}
+
+func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, error) {
+	request, err := fhttp.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("origin", BaseUrl)
+	request.Header.Set("referer", BaseUrl)
+	request.Header.Set("accept", "*/*")
+	request.Header.Set("accept-language", common.RandomLanguage())
+	request.Header.Set("cache-control", "no-cache")
+	request.Header.Set("content-type", "application/json")
+	request.Header.Set("oai-language", "en-US")
+	request.Header.Set("pragma", "no-cache")
+	request.Header.Set("sec-ch-ua-mobile", "?0")
+	request.Header.Set("sec-fetch-dest", "empty")
+	request.Header.Set("sec-fetch-mode", "cors")
+	request.Header.Set("sec-fetch-site", "same-origin")
+	request.Header.Set("User-Agent", browser.Random())
+	return request, nil
 }
