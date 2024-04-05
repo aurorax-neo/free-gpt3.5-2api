@@ -58,6 +58,6 @@ mkdir -p $PWD/free-gpt3.5-2api
 ###### 注：AUTH_TOKEN自行替换；tag替换为release版本号，如：0.0.1
 
 ```
-docker run -itd  --name=free-gpt3.5-2api -p 8080:8080 -v $PWD/free-gpt3.5-2api/logs:/app/logs registry.cn-hangzhou.aliyuncs.com/aurorax/free-gpt3.5-2api:<tag>
+docker run -itd  --name=free-gpt3.5-2api -p 8080:8080 -v $PWD/free-gpt3.5-2api/logs:/app/logs registry.cn-hangzhou.aliyuncs.com/aurorax/free-gpt35-2api:<tag>
 ```
 
