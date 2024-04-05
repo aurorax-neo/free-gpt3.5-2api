@@ -37,7 +37,7 @@ func init() {
 	// PROXY
 	proxy := os.Getenv("PROXY")
 	if proxy == "" {
-		CONFIG.Proxy = nil
+		CONFIG.Proxy = &url.URL{}
 	} else {
 		CONFIG.Proxy = common.ParseUrl(proxy)
 	}
