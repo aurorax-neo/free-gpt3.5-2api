@@ -24,7 +24,6 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	instance := pool.GetGpt35PoolInstance().GetGpt35(3)
 	if instance == nil {
 		logger.Logger.Error("Pool GetGpt35 is empty")
-		instance.IsLapse = true
 		v1.ErrorResponse(c, http.StatusInternalServerError, "Pool GetGpt35 is empty", nil)
 		return
 	}

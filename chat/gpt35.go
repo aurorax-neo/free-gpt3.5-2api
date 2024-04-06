@@ -83,14 +83,14 @@ func (G *Gpt35) getNewSession() error {
 	// 创建请求
 	request, err := G.NewRequest("POST", SessionUrl, body)
 	if err != nil {
-		return nil
+		return err
 	}
 	// 设置请求头
 	request.Header.Set("oai-device-id", G.Session.OaiDeviceId)
 	// 发送 POST 请求
 	response, err := G.Client.Do(request)
 	if err != nil {
-		return nil
+		return err
 	}
 	if response.StatusCode != 200 {
 		return fmt.Errorf("StatusCode: %d", response.StatusCode)
@@ -99,7 +99,7 @@ func (G *Gpt35) getNewSession() error {
 		_ = Body.Close()
 	}(response.Body)
 	if err := json.NewDecoder(response.Body).Decode(&G.Session); err != nil {
-		return nil
+		return err
 	}
 	return nil
 }
