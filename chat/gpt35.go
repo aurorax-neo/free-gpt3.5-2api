@@ -6,6 +6,7 @@ import (
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
 	browser "github.com/EDDYCJY/fake-useragent"
+	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
 	tlsClient "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
@@ -66,6 +67,9 @@ func NewGpt35() *Gpt35 {
 	// 获取新的 session
 	err = instance.getNewSession()
 	if err != nil {
+		logger.Logger.Error(fmt.Sprint("Failed to get authorization: ", err))
+		logger.Logger.Error("If this error persists, your country may not be supported yet.")
+		logger.Logger.Error("If your country was the issue, please consider using a U.S. PROXY.")
 		return nil
 	}
 	return instance
@@ -85,8 +89,11 @@ func (G *Gpt35) getNewSession() error {
 	request.Header.Set("oai-device-id", G.Session.OaiDeviceId)
 	// 发送 POST 请求
 	response, err := G.Client.Do(request)
-	if err != nil || response.StatusCode != fhttp.StatusOK {
-		return fmt.Errorf("system: Failed to get new session: %v", err)
+	if err != nil {
+		return nil
+	}
+	if response.StatusCode != 200 {
+		return fmt.Errorf("StatusCode: %d", response.StatusCode)
 	}
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
