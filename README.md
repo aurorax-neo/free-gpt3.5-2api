@@ -64,3 +64,8 @@ mkdir -p $PWD/free-gpt3.5-2api
 docker run -itd  --name=free-gpt3.5-2api -p 9846:3040 -v $PWD/free-gpt3.5-2api/logs:/app/logs ghcr.io/aurorax-neo/free-gpt3.5-2api
 ```
 
+### Koyeb部署
+
+###### 注意：`Regions`请选择支持`openai`免登的区域！！！
+
+[![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=docker&name=free-gpt3-5-2api&region=par&ports=3040;http;/&image=ghcr.io/aurorax-neo/free-gpt3.5-2api)
