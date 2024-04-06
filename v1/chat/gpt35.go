@@ -23,12 +23,11 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	// 获取 chat 实例
 	instance := pool.GetGpt35PoolInstance().GetGpt35(3)
 	if instance == nil {
-		logger.Logger.Error("instance is nil")
+		logger.Logger.Error("Pool GetGpt35 is empty")
 		instance.IsLapse = true
-		v1.ErrorResponse(c, http.StatusInternalServerError, "instance is nil", nil)
+		v1.ErrorResponse(c, http.StatusInternalServerError, "Pool GetGpt35 is empty", nil)
 		return
 	}
-	logger.Logger.Info(fmt.Sprint("Gpt35  index: ", pool.GetGpt35PoolInstance().Index))
 	// 转换请求
 	ChatReq35 := reqmodel.ApiReq2ChatReq35(apiReq)
 	// 请求参数

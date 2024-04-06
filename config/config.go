@@ -53,31 +53,31 @@ func init() {
 	poolMaxCount := os.Getenv("POOL_MAX_COUNT")
 	var err error
 	if poolMaxCount == "" {
-		CONFIG.PoolMaxCount = 5
+		CONFIG.PoolMaxCount = 10
 	} else {
 		CONFIG.PoolMaxCount, err = strconv.Atoi(poolMaxCount)
 		if err != nil {
-			CONFIG.PoolMaxCount = 5
+			CONFIG.PoolMaxCount = 10
 		}
 	}
 	// AUTH_ED
 	authED := os.Getenv("AUTH_ED")
 	if authED == "" {
-		CONFIG.AuthED = 180
+		CONFIG.AuthED = 600
 	} else {
 		CONFIG.AuthED, err = strconv.Atoi(authED)
 		if err != nil {
-			CONFIG.AuthED = 180
+			CONFIG.AuthED = 600
 		}
 	}
 	// AUTH_USE_COUNT
 	authUseCount := os.Getenv("AUTH_USE_COUNT")
 	if authUseCount == "" {
-		CONFIG.AuthUseCount = 5
+		CONFIG.AuthUseCount = 75
 	} else {
 		CONFIG.AuthUseCount, err = strconv.Atoi(authUseCount)
 		if err != nil {
-			CONFIG.AuthUseCount = 5
+			CONFIG.AuthUseCount = 75
 		}
 	}
 }
