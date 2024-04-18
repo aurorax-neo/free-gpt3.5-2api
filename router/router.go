@@ -2,6 +2,7 @@ package router
 
 import (
 	"free-gpt3.5-2api/middleware"
+	v1 "free-gpt3.5-2api/v1"
 	"free-gpt3.5-2api/v1/chat"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -16,6 +17,7 @@ func SetRouter(router *gin.Engine) {
 	v1Router.Use(middleware.V1Request)
 	v1Router.Use(middleware.V1Response)
 	v1Router.Use(middleware.V1Auth)
+	v1Router.GET("/tokens", v1.Tokens)
 	v1Router.OPTIONS("/chat/completions", nil)
 	v1Router.POST("/chat/completions", chat.Completions)
 }

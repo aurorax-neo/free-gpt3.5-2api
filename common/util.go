@@ -3,6 +3,7 @@ package common
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
 	"math/rand"
 	"net/url"
@@ -11,6 +12,21 @@ import (
 	"strings"
 	"time"
 )
+
+func ErrorResponse(c *gin.Context, code int, msg interface{}, err error) {
+	c.AbortWithStatusJSON(code, gin.H{
+		"detail": struct {
+			Code  int         `json:"code"`
+			Msg   interface{} `json:"msg"`
+			Error interface{} `json:"error"`
+		}{
+			Code:  code,
+			Msg:   msg,
+			Error: err,
+		},
+	})
+	return
+}
 
 // GetTimestampSecond 获取当前时间戳 + 指定 秒
 func GetTimestampSecond(second int) int64 {

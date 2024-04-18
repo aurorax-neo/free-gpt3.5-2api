@@ -6,7 +6,6 @@ import (
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
 	browser "github.com/EDDYCJY/fake-useragent"
-	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
 	tlsClient "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
@@ -67,9 +66,6 @@ func NewGpt35() *Gpt35 {
 	// 获取新的 session
 	err = instance.getNewSession()
 	if err != nil {
-		logger.Logger.Error(fmt.Sprint("Failed to get authorization: ", err))
-		logger.Logger.Error("If this error persists, your country may not be supported yet.")
-		logger.Logger.Error("If your country was the issue, please consider using a U.S. PROXY.")
 		return nil
 	}
 	return instance
@@ -112,10 +108,11 @@ func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, 
 	request.Header.Set("origin", BaseUrl)
 	request.Header.Set("referer", BaseUrl)
 	request.Header.Set("accept", "*/*")
-	request.Header.Set("accept-language", common.RandomLanguage())
+	language := common.RandomLanguage()
+	request.Header.Set("accept-language", language)
+	request.Header.Set("oai-language", language)
 	request.Header.Set("cache-control", "no-cache")
 	request.Header.Set("content-type", "application/json")
-	request.Header.Set("oai-language", "en-US")
 	request.Header.Set("pragma", "no-cache")
 	request.Header.Set("sec-ch-ua-mobile", "?0")
 	request.Header.Set("sec-fetch-dest", "empty")

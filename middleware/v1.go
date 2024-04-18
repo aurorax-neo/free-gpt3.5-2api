@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
 	"github.com/aurorax-neo/go-logger"
 	"github.com/gin-gonic/gin"
@@ -55,22 +56,12 @@ func inArray(user string, list []string) bool {
 func V1Auth(c *gin.Context) {
 	authToken := c.Request.Header.Get("Authorization")
 	if authToken == "" {
-		c.AbortWithStatusJSON(401, gin.H{
-			"message": "You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY).",
-			"type":    "invalid_request_error",
-			"param":   nil,
-			"code":    nil,
-		})
+		common.ErrorResponse(c, 401, "You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY)", nil)
 		return
 	}
 	// 判断 authToken 是否在 config.CONFIG.AUTHORIZATIONS 列表
 	if !inArray(authToken, config.CONFIG.AUTHORIZATIONS) {
-		c.AbortWithStatusJSON(401, gin.H{
-			"message": "Incorrect API key provided: sk-4yNZz***************************************6mjw.",
-			"type":    "invalid_request_error",
-			"param":   nil,
-			"code":    "invalid_api_key",
-		})
+		common.ErrorResponse(c, 401, "Incorrect API key provided: sk-4yNZz***************************************6mjw.", nil)
 		return
 	}
 	c.Next()
