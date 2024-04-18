@@ -1,24 +1,8 @@
 package v1
 
 import (
-	"github.com/gin-gonic/gin"
 	"math/rand"
 )
-
-func ErrorResponse(c *gin.Context, code int, msg interface{}, err error) {
-	c.JSON(code, gin.H{
-		"detail": struct {
-			Code  int         `json:"code"`
-			Msg   interface{} `json:"msg"`
-			Error interface{} `json:"error"`
-		}{
-			Code:  code,
-			Msg:   msg,
-			Error: err,
-		},
-	})
-	return
-}
 
 func MappingModel(model string) string {
 	var modelMapping = map[string]string{

@@ -20,19 +20,17 @@ var (
 )
 
 type Gpt35Pool struct {
-	Gpt35s    []*chat.Gpt35
-	Index     int
-	MaxCount  int
-	LiveCount int
+	Gpt35s   []*chat.Gpt35
+	Index    int
+	MaxCount int
 }
 
 func GetGpt35PoolInstance() *Gpt35Pool {
 	once.Do(func() {
 		gpt35PoolInstance = &Gpt35Pool{
-			Gpt35s:    make([]*chat.Gpt35, config.CONFIG.PoolMaxCount),
-			Index:     -1,
-			LiveCount: 0,
-			MaxCount:  config.CONFIG.PoolMaxCount,
+			Gpt35s:   make([]*chat.Gpt35, config.CONFIG.PoolMaxCount),
+			Index:    -1,
+			MaxCount: config.CONFIG.PoolMaxCount,
 		}
 		logger.Logger.Info(fmt.Sprint("PoolMaxCount: ", config.CONFIG.PoolMaxCount, ", AuthUseCount: ", config.CONFIG.AuthUseCount, ", AuthExpirationDate: ", config.CONFIG.AuthED, ", Init Gpt35Pool..."))
 		// 定时刷新 Gpt35Pool
@@ -42,21 +40,22 @@ func GetGpt35PoolInstance() *Gpt35Pool {
 }
 
 func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
-	// 索引加 1
-	G.Index++
-	// 如果索引等于最大数量，则重置为 0
-	if G.Index < 0 || G.Index >= G.MaxCount {
-		G.Index = 0
+	// 索引加 1，采用取模运算实现循环
+	G.Index = (G.Index + 1) % G.MaxCount
+
+	// 处理索引为负数的情况
+	if G.Index < 0 {
+		G.Index = G.MaxCount - 1
 	}
+
 	// 返回索引对应的 Gpt35 实例
-	if G._isLive(G.Index) {
+	if G.IsLive(G.Index) {
 		gpt35 := G.Gpt35s[G.Index]
 		gpt35.MaxUseCount--
-		return G.Gpt35s[G.Index]
+		return gpt35
 	} else if retry > 0 { // 如果 Gpt35 实例为空且重试次数大于 0，则重新获取 Gpt35 实例
 		G.raGpt35AtIndex(G.Index)
 		retry--
-		G.Index--
 		return G.GetGpt35(retry)
 	}
 	return nil
@@ -83,13 +82,13 @@ func (G *Gpt35Pool) raGpt35AtIndex(index int) {
 
 func (G *Gpt35Pool) _flushGpt35Pool() {
 	for i := 0; i < G.MaxCount; i++ {
-		if !G._isLive(i) { //过期
+		if !G.IsLive(i) { //过期
 			G.raGpt35AtIndex(i)
 		}
 	}
 }
 
-func (G *Gpt35Pool) _isLive(index int) bool {
+func (G *Gpt35Pool) IsLive(index int) bool {
 	//判断是否为空
 	if G.Gpt35s[index] == nil || //空的
 		G.Gpt35s[index].MaxUseCount <= 0 || //可使用次数为0

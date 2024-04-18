@@ -24,7 +24,7 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	instance := pool.GetGpt35PoolInstance().GetGpt35(3)
 	if instance == nil {
 		logger.Logger.Error("Pool GetGpt35 is empty")
-		v1.ErrorResponse(c, http.StatusInternalServerError, "Pool GetGpt35 is empty", nil)
+		common.ErrorResponse(c, http.StatusInternalServerError, "Pool GetGpt35 is empty", nil)
 		return
 	}
 	// 转换请求
@@ -32,7 +32,7 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	// 请求参数
 	body, err := common.Struct2BytesBuffer(ChatReq35)
 	if err != nil {
-		v1.ErrorResponse(c, http.StatusInternalServerError, "", err)
+		common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 		logger.Logger.Error(err.Error())
 		return
 
@@ -45,7 +45,7 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	// 发送请求
 	response, err := instance.Client.Do(request)
 	if err != nil {
-		v1.ErrorResponse(c, http.StatusInternalServerError, "", err)
+		common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 		logger.Logger.Error(err.Error())
 		return
 	}
@@ -55,7 +55,7 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	if response.StatusCode != http.StatusOK {
 		logger.Logger.Error(fmt.Sprint(response.StatusCode))
 		instance.IsLapse = true
-		v1.ErrorResponse(c, response.StatusCode, "", nil)
+		common.ErrorResponse(c, response.StatusCode, "", nil)
 		return
 	}
 	// 流式返回
@@ -78,7 +78,7 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Re
 	for {
 		event, err := decoder.Decode()
 		if err != nil {
-			v1.ErrorResponse(c, http.StatusInternalServerError, "", err)
+			common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 			logger.Logger.Error(err.Error())
 			break
 		}
@@ -181,7 +181,7 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.
 	for {
 		event, err := decoder.Decode()
 		if err != nil {
-			v1.ErrorResponse(c, http.StatusInternalServerError, "", err)
+			common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 			logger.Logger.Error(err.Error())
 			break
 		}
