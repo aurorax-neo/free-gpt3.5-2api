@@ -2,6 +2,21 @@
 
 ## 接口
 
+#### /v1/tokens
+
+```
+curl --location --request GET 'http://127.0.0.1:8080/v1/tokens' \
+--header 'Authorization: Bearer abc'
+```
+
+返回示例说明：如果` count` 为 `0`请检查`ip`是否支持 `openai`
+
+```
+{
+    "count": 0
+}
+```
+
 #### /v1/chat/completions
 
 ###### 支持返回stream和json
@@ -37,14 +52,14 @@ curl --location --request POST 'http://127.0.0.1:9846/v1/chat/completions' \
 ### 环境变量
 
 ```
-LOG_LEVEL=info   # debug, info, warn, error
-BIND=0.0.0.0     # 127.0.0.1
+LOG_LEVEL=info    # debug, info, warn, error
+BIND=0.0.0.0      # 127.0.0.1
 PORT=3040
-PROXY=			 # http://127.0.0.1:7890
-AUTHORIZATIONS=  # abc,bac (英文 , 分隔)
-POOL_MAX_COUNT=5 # max number of connections to keep in the pool
-AUTH_ED=180      # expiration time for the authorization in seconds
-AUTH_USE_COUNT=5 # number of times an authorization can be used
+PROXY=			  # http://127.0.0.1:7890
+AUTHORIZATIONS=   # abc,bac (英文 , 分隔)
+POOL_MAX_COUNT=20 # max number of connections to keep in the pool 默认：10
+AUTH_ED=600       # expiration time for the authorization in seconds 默认：600
+AUTH_USE_COUNT=70 # number of times an authorization can be used 默认：75
 ```
 
 ###### 也可使用与程序同目录下 `.env` 文件配置上述字段
