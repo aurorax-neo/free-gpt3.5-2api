@@ -18,6 +18,12 @@ const BaseUrl = "https://chat.openai.com"
 const ApiUrl = BaseUrl + "/backend-anon/conversation"
 const SessionUrl = BaseUrl + "/backend-anon/sentinel/chat-requirements"
 
+// Language 随机生成语言
+var Language = common.RandomLanguage()
+
+// Ua 随机生成 User-Agent
+var Ua = browser.Random()
+
 type Gpt35 struct {
 	Client      tlsClient.HttpClient
 	MaxUseCount int
@@ -63,6 +69,8 @@ func NewGpt35() *Gpt35 {
 		MaxUseCount: 1,
 		ExpiresIn:   common.GetTimestampSecond(config.CONFIG.AuthED),
 		Session:     &session{},
+		Ua:          Ua,
+		Language:    Language,
 	}
 	// 获取新的 session
 	err = instance.getNewSession()
@@ -73,10 +81,6 @@ func NewGpt35() *Gpt35 {
 }
 
 func (G *Gpt35) getNewSession() error {
-	// 随机生成语言
-	G.Language = common.RandomLanguage()
-	// 随机生成 User-Agent
-	G.Ua = browser.Random()
 	// 生成新的设备 ID
 	G.Session.OaiDeviceId = uuid.New().String()
 	// 设置请求体
