@@ -21,8 +21,8 @@ import (
 
 func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	// 获取 chat 实例
-	instance := pool.GetGpt35PoolInstance().GetGpt35(3)
-	if instance == nil {
+	ChatGpt35 := pool.GetGpt35PoolInstance().GetGpt35(3)
+	if ChatGpt35 == nil {
 		logger.Logger.Error("Pool GetGpt35 is empty")
 		common.ErrorResponse(c, http.StatusInternalServerError, "Pool GetGpt35 is empty", nil)
 		return
@@ -38,12 +38,20 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 
 	}
 	// 生成请求
-	request, err := instance.NewRequest(fhttp.MethodPost, chat.ApiUrl, body)
+	request, err := ChatGpt35.NewRequest(fhttp.MethodPost, chat.ApiUrl, body)
+	if err != nil || request == nil {
+		common.ErrorResponse(c, http.StatusInternalServerError, "", err)
+		logger.Logger.Error(err.Error())
+		return
+	}
 	// 设置请求头
-	request.Header.Set("oai-device-id", instance.Session.OaiDeviceId)
-	request.Header.Set("openai-sentinel-chat-requirements-token", instance.Session.Token)
+	request.Header.Set("oai-device-id", ChatGpt35.Session.OaiDeviceId)
+	request.Header.Set("openai-sentinel-chat-requirements-token", ChatGpt35.Session.Token)
+	if ChatGpt35.Session.ProofWork.Required {
+		request.Header.Set("Openai-Sentinel-Proof-Token", ChatGpt35.Session.ProofWork.Ospt)
+	}
 	// 发送请求
-	response, err := instance.Client.Do(request)
+	response, err := ChatGpt35.Client.Do(request)
 	if err != nil {
 		common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 		logger.Logger.Error(err.Error())
@@ -54,7 +62,7 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	}(response.Body)
 	if response.StatusCode != http.StatusOK {
 		logger.Logger.Error(fmt.Sprint(response.StatusCode))
-		instance.IsLapse = true
+		ChatGpt35.MaxUseCount = 0
 		common.ErrorResponse(c, response.StatusCode, "", nil)
 		return
 	}
