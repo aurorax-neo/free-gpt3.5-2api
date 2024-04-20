@@ -54,7 +54,7 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 		// 可用次数减 1
 		gpt35.MaxUseCount--
 		// 更新 index 的 Gpt35 实例
-		G.updateGpt35AtIndex(G.Index)
+		go G.updateGpt35AtIndex(G.Index)
 		// 返回 深拷贝的 Gpt35 实例
 		gpt35_ := chat.Gpt35{
 			Client:      gpt35.Client,
