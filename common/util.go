@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func ErrorResponse(c *gin.Context, code int, msg interface{}, err error) {
+func ErrorResponse(c *gin.Context, code int, msg interface{}, err interface{}) {
 	c.AbortWithStatusJSON(code, gin.H{
 		"detail": struct {
 			Code  int         `json:"code"`

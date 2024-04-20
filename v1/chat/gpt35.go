@@ -62,7 +62,6 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	}(response.Body)
 	if response.StatusCode != http.StatusOK {
 		logger.Logger.Error(fmt.Sprint(response.StatusCode))
-		ChatGpt35.MaxUseCount = 0
 		common.ErrorResponse(c, response.StatusCode, "", nil)
 		return
 	}
@@ -130,6 +129,11 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Re
 		}
 		chatResp35 := &respmodel.ChatResp35{}
 		err = json.Unmarshal([]byte(data), chatResp35)
+		if chatResp35.Error != nil && !handlingSigns {
+			logger.Logger.Error(fmt.Sprint(chatResp35.Error))
+			common.ErrorResponse(c, http.StatusInternalServerError, "", chatResp35.Error)
+			return
+		}
 		// 脏数据不处理
 		if err != nil {
 			continue
@@ -233,6 +237,11 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.
 		}
 		chatResp35 := &respmodel.ChatResp35{}
 		err = json.Unmarshal([]byte(data), chatResp35)
+		if chatResp35.Error != nil && !handlingSigns {
+			logger.Logger.Error(fmt.Sprint(chatResp35.Error))
+			common.ErrorResponse(c, http.StatusInternalServerError, "", chatResp35.Error)
+			return
+		}
 		// 脏数据不处理
 		if err != nil {
 			continue
