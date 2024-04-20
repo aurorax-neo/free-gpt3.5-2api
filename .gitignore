@@ -182,3 +182,4 @@ fabric.properties
 /logs/
 /.env
 /target/
+/CHANGELOG.md
