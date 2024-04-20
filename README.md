@@ -55,11 +55,10 @@ curl --location --request POST 'http://127.0.0.1:9846/v1/chat/completions' \
 LOG_LEVEL=info    # debug, info, warn, error
 BIND=0.0.0.0      # 127.0.0.1
 PORT=3040
-PROXY=			  # http://127.0.0.1:7890
+PROXY=            # http://127.0.0.1:7890
 AUTHORIZATIONS=   # abc,bac (英文 , 分隔)
-POOL_MAX_COUNT=20 # max number of connections to keep in the pool 默认：10
+POOL_MAX_COUNT=64 # max number of connections to keep in the pool 默认：64
 AUTH_ED=600       # expiration time for the authorization in seconds 默认：600
-AUTH_USE_COUNT=70 # number of times an authorization can be used 默认：75
 ```
 
 ###### 也可使用与程序同目录下 `.env` 文件配置上述字段

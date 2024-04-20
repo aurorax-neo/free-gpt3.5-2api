@@ -22,16 +22,18 @@ type Gpt35 struct {
 	Client      tlsClient.HttpClient
 	MaxUseCount int
 	ExpiresIn   int64
-	IsLapse     bool
 	Session     *session
+	Ua          string
+	Language    string
 }
 
 type session struct {
-	OaiDeviceId string    `json:"-"`
-	Persona     string    `json:"persona"`
-	Arkose      arkose    `json:"arkose"`
-	Turnstile   turnstile `json:"turnstile"`
-	Token       string    `json:"token"`
+	OaiDeviceId string           `json:"-"`
+	Persona     string           `json:"persona"`
+	Arkose      arkose           `json:"arkose"`
+	Turnstile   turnstile        `json:"turnstile"`
+	ProofWork   common.ProofWork `json:"proofofwork"`
+	Token       string           `json:"token"`
 }
 
 type arkose struct {
@@ -58,9 +60,8 @@ func NewGpt35() *Gpt35 {
 	}
 	instance := &Gpt35{
 		Client:      client,
-		MaxUseCount: config.CONFIG.AuthUseCount,
+		MaxUseCount: 1,
 		ExpiresIn:   common.GetTimestampSecond(config.CONFIG.AuthED),
-		IsLapse:     false,
 		Session:     &session{},
 	}
 	// 获取新的 session
@@ -72,6 +73,10 @@ func NewGpt35() *Gpt35 {
 }
 
 func (G *Gpt35) getNewSession() error {
+	// 随机生成语言
+	G.Language = common.RandomLanguage()
+	// 随机生成 User-Agent
+	G.Ua = browser.Random()
 	// 生成新的设备 ID
 	G.Session.OaiDeviceId = uuid.New().String()
 	// 设置请求体
@@ -83,6 +88,8 @@ func (G *Gpt35) getNewSession() error {
 	}
 	// 设置请求头
 	request.Header.Set("oai-device-id", G.Session.OaiDeviceId)
+	request.Header.Set("accept-language", G.Language)
+	request.Header.Set("oai-language", G.Language)
 	// 发送 POST 请求
 	response, err := G.Client.Do(request)
 	if err != nil {
@@ -97,6 +104,9 @@ func (G *Gpt35) getNewSession() error {
 	if err := json.NewDecoder(response.Body).Decode(&G.Session); err != nil {
 		return err
 	}
+	if G.Session.ProofWork.Required {
+		G.Session.ProofWork.Ospt = common.CalcProofToken(G.Session.ProofWork.Seed, G.Session.ProofWork.Difficulty, request.Header.Get("User-Agent"))
+	}
 	return nil
 }
 
@@ -105,12 +115,9 @@ func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, 
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Set("origin", BaseUrl)
-	request.Header.Set("referer", BaseUrl)
+	request.Header.Set("origin", common.GetOrigin(BaseUrl))
+	request.Header.Set("referer", common.GetOrigin(BaseUrl))
 	request.Header.Set("accept", "*/*")
-	language := common.RandomLanguage()
-	request.Header.Set("accept-language", language)
-	request.Header.Set("oai-language", language)
 	request.Header.Set("cache-control", "no-cache")
 	request.Header.Set("content-type", "application/json")
 	request.Header.Set("pragma", "no-cache")
@@ -118,6 +125,8 @@ func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, 
 	request.Header.Set("sec-fetch-dest", "empty")
 	request.Header.Set("sec-fetch-mode", "cors")
 	request.Header.Set("sec-fetch-site", "same-origin")
-	request.Header.Set("User-Agent", browser.Random())
+	request.Header.Set("accept-language", G.Language)
+	request.Header.Set("oai-language", G.Language)
+	request.Header.Set("User-Agent", G.Ua)
 	return request, nil
 }

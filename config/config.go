@@ -16,7 +16,6 @@ type config struct {
 	AUTHORIZATIONS []string
 	PoolMaxCount   int
 	AuthED         int
-	AuthUseCount   int
 }
 
 var CONFIG *config
@@ -53,11 +52,11 @@ func init() {
 	poolMaxCount := os.Getenv("POOL_MAX_COUNT")
 	var err error
 	if poolMaxCount == "" {
-		CONFIG.PoolMaxCount = 10
+		CONFIG.PoolMaxCount = 64
 	} else {
 		CONFIG.PoolMaxCount, err = strconv.Atoi(poolMaxCount)
 		if err != nil {
-			CONFIG.PoolMaxCount = 10
+			CONFIG.PoolMaxCount = 64
 		}
 	}
 	// AUTH_ED
@@ -68,16 +67,6 @@ func init() {
 		CONFIG.AuthED, err = strconv.Atoi(authED)
 		if err != nil {
 			CONFIG.AuthED = 600
-		}
-	}
-	// AUTH_USE_COUNT
-	authUseCount := os.Getenv("AUTH_USE_COUNT")
-	if authUseCount == "" {
-		CONFIG.AuthUseCount = 75
-	} else {
-		CONFIG.AuthUseCount, err = strconv.Atoi(authUseCount)
-		if err != nil {
-			CONFIG.AuthUseCount = 75
 		}
 	}
 }
