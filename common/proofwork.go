@@ -13,7 +13,6 @@ var (
 	numberCollisions = 100000
 	cores            = []int{8, 12, 16, 24}
 	screens          = []int{3000, 4000, 6000}
-	timeLocation, _  = time.LoadLocation("Asia/Shanghai")
 	timeLayout       = "Mon Jan 2 2006 15:04:05"
 )
 
@@ -26,8 +25,7 @@ type ProofWork struct {
 
 func getParseTime() string {
 	now := time.Now()
-	now = now.In(timeLocation)
-	return now.Format(timeLayout) + " GMT+0800 (中国标准时间)"
+	return now.Format(timeLayout) + " GMT" + now.Format("-0700 MST (MST)")
 }
 
 func getConfig(userAgent string) []interface{} {
