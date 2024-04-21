@@ -51,7 +51,7 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 		request.Header.Set("Openai-Sentinel-Proof-Token", ChatGpt35.Session.ProofWork.Ospt)
 	}
 	// 发送请求
-	response, err := ChatGpt35.Client.Do(request)
+	response, err := ChatGpt35.RequestClient.Do(request)
 	if err != nil {
 		common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 		logger.Logger.Error(err.Error())

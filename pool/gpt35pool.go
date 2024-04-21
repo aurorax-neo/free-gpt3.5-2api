@@ -57,12 +57,12 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 		go G.updateGpt35AtIndex(G.Index)
 		// 返回 深拷贝的 Gpt35 实例
 		gpt35_ := chat.Gpt35{
-			Client:      gpt35.Client,
-			MaxUseCount: gpt35.MaxUseCount,
-			ExpiresIn:   gpt35.ExpiresIn,
-			Session:     gpt35.Session,
-			Ua:          gpt35.Ua,
-			Language:    gpt35.Language,
+			RequestClient: gpt35.RequestClient,
+			MaxUseCount:   gpt35.MaxUseCount,
+			ExpiresIn:     gpt35.ExpiresIn,
+			Session:       gpt35.Session,
+			Ua:            gpt35.Ua,
+			Language:      gpt35.Language,
 		}
 		return &gpt35_
 	} else if retry > 0 {
