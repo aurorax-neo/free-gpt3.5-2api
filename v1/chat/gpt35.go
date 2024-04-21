@@ -24,7 +24,7 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	ChatGpt35 := pool.GetGpt35PoolInstance().GetGpt35(3)
 	if ChatGpt35 == nil {
 		logger.Logger.Error("Pool GetGpt35 is empty")
-		common.ErrorResponse(c, http.StatusInternalServerError, "Pool GetGpt35 is empty", nil)
+		common.ErrorResponse(c, http.StatusInternalServerError, "Pool GetGpt35 is empty,please change the IP address or use a proxy to try again.", nil)
 		return
 	}
 	// 转换请求
