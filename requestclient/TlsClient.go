@@ -1,6 +1,8 @@
 package requestclient
 
 import (
+	"fmt"
+	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
 	tlsClient "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
@@ -46,6 +48,7 @@ func (T *TlsClient) Do(req *fhttp.Request) (*fhttp.Response, error) {
 }
 
 func (T *TlsClient) SetProxy(link string) error {
+	logger.Logger.Debug(fmt.Sprint("SetProxy: ", link))
 	err := T.client.SetProxy(link)
 	if err != nil {
 		return err

@@ -3,11 +3,14 @@ package chat
 import (
 	"encoding/json"
 	"fmt"
+	"free-gpt3.5-2api/ProxyPool"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
 	"free-gpt3.5-2api/requestclient"
 	browser "github.com/EDDYCJY/fake-useragent"
+	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
+	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/google/uuid"
 	"io"
 	"strings"
@@ -52,15 +55,26 @@ type turnstile struct {
 
 func NewGpt35() *Gpt35 {
 	instance := &Gpt35{
-		RequestClient: requestclient.GetInstance(),
-		MaxUseCount:   1,
-		ExpiresIn:     common.GetTimestampSecond(config.CONFIG.AuthED),
-		Session:       &session{},
-		Ua:            Ua,
-		Language:      Language,
+		MaxUseCount: 1,
+		ExpiresIn:   common.GetTimestampSecond(config.AuthED),
+		Session:     &session{},
+		Ua:          Ua,
+		Language:    Language,
+	}
+	// 获取代理池
+	ProxyPoolInstance := ProxyPool.GetProxyPoolInstance()
+	// 如果代理池中有代理数大于 1 则使用 各自requestClient
+	if len(ProxyPoolInstance.Proxies) > 1 {
+		instance.RequestClient = requestclient.NewTlsClient(300, profiles.Okhttp4Android13)
+	} else {
+		instance.RequestClient = requestclient.GetInstance()
+	}
+	err := instance.RequestClient.SetProxy(ProxyPoolInstance.GetProxy().String())
+	if err != nil {
+		logger.Logger.Error(fmt.Sprint("SetProxy Error: ", err))
 	}
 	// 获取新的 session
-	err := instance.getNewSession()
+	err = instance.getNewSession()
 	if err != nil {
 		return nil
 	}

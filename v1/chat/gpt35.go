@@ -3,9 +3,9 @@ package chat
 import (
 	"encoding/json"
 	"fmt"
+	"free-gpt3.5-2api/Gpt35Pool"
 	"free-gpt3.5-2api/chat"
 	"free-gpt3.5-2api/common"
-	"free-gpt3.5-2api/pool"
 	v1 "free-gpt3.5-2api/v1"
 	"free-gpt3.5-2api/v1/chat/reqmodel"
 	"free-gpt3.5-2api/v1/chat/respmodel"
@@ -21,7 +21,7 @@ import (
 
 func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	// 获取 chat 实例
-	ChatGpt35 := pool.GetGpt35PoolInstance().GetGpt35(3)
+	ChatGpt35 := Gpt35Pool.GetGpt35PoolInstance().GetGpt35(3)
 	if ChatGpt35 == nil {
 		logger.Logger.Error("Pool GetGpt35 is empty")
 		common.ErrorResponse(c, http.StatusInternalServerError, "Pool GetGpt35 is empty,please change the IP address or use a proxy to try again.", nil)

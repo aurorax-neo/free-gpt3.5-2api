@@ -16,11 +16,11 @@ func main() {
 	// 设置路由
 	router.SetRouter(server)
 	// 提示服务启动
-	host := config.CONFIG.Bind
-	if config.CONFIG.Bind == "0.0.0.0" {
+	host := config.Bind
+	if config.Bind == "0.0.0.0" {
 		host = "127.0.0.1"
 	}
-	logger.Logger.Info(fmt.Sprint("Server started on http://", host, ":", config.CONFIG.Port))
+	logger.Logger.Info(fmt.Sprint("Server started on http://", host, ":", config.Port))
 	// 启动 HTTP 服务器
-	_ = server.Run(fmt.Sprint(config.CONFIG.Bind, ":", config.CONFIG.Port))
+	_ = server.Run(fmt.Sprint(config.Bind, ":", config.Port))
 }

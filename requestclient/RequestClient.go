@@ -1,9 +1,6 @@
 package requestclient
 
 import (
-	"fmt"
-	"free-gpt3.5-2api/config"
-	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/bogdanfinn/tls-client/profiles"
 	"io"
@@ -28,10 +25,6 @@ var (
 func GetInstance() *TlsClient {
 	clientOnce.Do(func() {
 		Instance = NewTlsClient(300, profiles.Okhttp4Android13)
-		err := Instance.SetProxy(config.CONFIG.Proxy.String())
-		if err != nil {
-			logger.Logger.Error(fmt.Sprint("SetProxy Error: ", err))
-		}
 	})
 	return Instance
 }
