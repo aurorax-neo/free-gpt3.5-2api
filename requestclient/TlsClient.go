@@ -48,6 +48,9 @@ func (T *TlsClient) Do(req *fhttp.Request) (*fhttp.Response, error) {
 }
 
 func (T *TlsClient) SetProxy(link string) error {
+	if link == "" {
+		return nil
+	}
 	logger.Logger.Debug(fmt.Sprint("SetProxy: ", link))
 	err := T.client.SetProxy(link)
 	if err != nil {
