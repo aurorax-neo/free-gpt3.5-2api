@@ -59,7 +59,7 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 			Language:      gpt35.Language,
 		}
 		// 更新 index 的 Gpt35 实例
-		go G.updateGpt35AtIndex(G.Index)
+		G.updateGpt35AtIndex(G.Index)
 		// 索引加 1，采用取模运算实现循环
 		G.Index = (G.Index + 1) % G.MaxCount
 		return &gpt35_

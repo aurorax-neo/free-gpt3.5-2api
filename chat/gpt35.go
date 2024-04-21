@@ -66,8 +66,12 @@ func NewGpt35() *Gpt35 {
 	// 如果代理池中有代理数大于 1 则使用 各自requestClient
 	if len(ProxyPoolInstance.Proxies) > 1 {
 		instance.RequestClient = requestclient.NewTlsClient(300, profiles.Okhttp4Android13)
+		instance.Ua = browser.Random()
+		instance.Language = common.RandomLanguage()
 	} else {
 		instance.RequestClient = requestclient.GetInstance()
+		instance.Ua = Ua
+		instance.Language = Language
 	}
 	err := instance.RequestClient.SetProxy(ProxyPoolInstance.GetProxy().String())
 	if err != nil {
