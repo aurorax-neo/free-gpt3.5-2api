@@ -46,7 +46,6 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 	defer G.Lock.Unlock()
 	// 索引加 1，采用取模运算实现循环
 	G.Index = (G.Index + 1) % G.MaxCount
-
 	// 返回索引对应的 Gpt35 实例
 	if G.IsLiveGpt35(G.Index) {
 		// 获取 Gpt35 实例
@@ -72,7 +71,9 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 		// 更新 index 的 Gpt35 实例
 		G.updateGpt35AtIndex(G.Index)
 		// 保证重试获取是刚刚更新的 Gpt35 实例
-		G.Index--
+		if retry > 1 {
+			G.Index--
+		}
 		// 递归获取 Gpt35 实例
 		return G.GetGpt35(retry - 1)
 	}
