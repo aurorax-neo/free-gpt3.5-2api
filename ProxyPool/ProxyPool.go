@@ -39,6 +39,9 @@ func NewProxyPool(proxies []*url.URL) *ProxyPool {
 }
 
 func (p *ProxyPool) GetProxy() *url.URL {
+	if len(p.Proxies) == 0 {
+		return &url.URL{}
+	}
 	proxy := p.Proxies[p.Index]
 	p.Index = (p.Index + 1) % len(p.Proxies)
 	return proxy
