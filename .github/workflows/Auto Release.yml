@@ -9,19 +9,15 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Node Version
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
       - name: Get Release Name
         shell: bash
-        id: get_release_name
+        id: grn
         run: echo "tag=$(echo $GITHUB_REF | sed 's|refs/tags/||')" >> $GITHUB_OUTPUT
 
       - name: Generate Changelog
@@ -29,12 +25,11 @@ jobs:
         run: |
           export PATH=$PATH:$HOME/go/bin
           go install github.com/git-chglog/git-chglog/cmd/git-chglog@latest
-          git-chglog -o CHANGELOG.md ${{ steps.get_release_name.outputs.tag }}
-          cp CHANGELOG.md ./tmp_changelog
+          git-chglog -o CHANGELOG.md ${{ steps.grn.outputs.tag }}
 
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
+      - name: Release
+        id: release
+        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         env:
           # GITHUB_TOKEN
@@ -43,9 +38,9 @@ jobs:
           # tag_name: 使用 tag
           tag_name: ${{ github.ref }}
           # release_name: 使用 tag
-          name: ${{ steps.get_release_name.outputs.tag }}
+          name: ${{ steps.grn.outputs.tag }}
           # body: 使用 changelog
-          body_path: ./tmp_changelog
+          body_path: CHANGELOG.md
           # 草稿
           draft: false
           # 预发布
