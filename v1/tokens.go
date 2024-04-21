@@ -2,7 +2,7 @@ package v1
 
 import (
 	"fmt"
-	"free-gpt3.5-2api/pool"
+	"free-gpt3.5-2api/Gpt35Pool"
 	"github.com/aurorax-neo/go-logger"
 	"github.com/gin-gonic/gin"
 )
@@ -15,7 +15,7 @@ func Tokens(c *gin.Context) {
 	resp := &TokensResp{
 		Count: 0,
 	}
-	instance := pool.GetGpt35PoolInstance()
+	instance := Gpt35Pool.GetGpt35PoolInstance()
 	for i := 0; i < instance.MaxCount; i++ {
 		if instance.IsLiveGpt35(i) {
 			resp.Count++

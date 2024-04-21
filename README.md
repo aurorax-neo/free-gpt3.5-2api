@@ -55,7 +55,7 @@ curl --location --request POST 'http://127.0.0.1:9846/v1/chat/completions' \
 LOG_LEVEL=info    # debug, info, warn, error
 BIND=0.0.0.0      # 127.0.0.1
 PORT=3040
-PROXY=            # http://127.0.0.1:7890
+PROXY=            # http://127.0.0.1:7890,http://127.0.0.1:7890 已支持多个代理（使用英文 "," 分隔）
 AUTHORIZATIONS=   # abc,bac (英文 , 分隔)
 POOL_MAX_COUNT=64 # max number of connections to keep in the pool 默认：64
 AUTH_ED=600       # expiration time for the authorization in seconds 默认：600
@@ -83,3 +83,4 @@ docker run -itd  --name=free-gpt3.5-2api -p 9846:3040 -v $PWD/free-gpt3.5-2api/l
 ###### 注意：`Regions`请选择支持`openai`免登的区域！！！
 
 [![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=docker&name=free-gpt3-5-2api&region=par&ports=3040;http;/&image=ghcr.io/aurorax-neo/free-gpt3.5-2api)
+

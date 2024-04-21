@@ -3,11 +3,13 @@ package chat
 import (
 	"encoding/json"
 	"fmt"
+	"free-gpt3.5-2api/ProxyPool"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
+	"free-gpt3.5-2api/requestclient"
 	browser "github.com/EDDYCJY/fake-useragent"
+	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
-	tlsClient "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/google/uuid"
 	"io"
@@ -25,12 +27,12 @@ var Language = common.RandomLanguage()
 var Ua = browser.Random()
 
 type Gpt35 struct {
-	Client      tlsClient.HttpClient
-	MaxUseCount int
-	ExpiresIn   int64
-	Session     *session
-	Ua          string
-	Language    string
+	RequestClient requestclient.RequestClient
+	MaxUseCount   int
+	ExpiresIn     int64
+	Session       *session
+	Ua            string
+	Language      string
 }
 
 type session struct {
@@ -52,25 +54,24 @@ type turnstile struct {
 }
 
 func NewGpt35() *Gpt35 {
-	jar := tlsClient.NewCookieJar()
-	options := []tlsClient.HttpClientOption{
-		tlsClient.WithTimeoutSeconds(300),
-		tlsClient.WithClientProfile(profiles.Okhttp4Android13),
-		tlsClient.WithNotFollowRedirects(),
-		tlsClient.WithCookieJar(jar),
-		tlsClient.WithProxyUrl(config.CONFIG.Proxy.String()),
-	}
-	client, err := tlsClient.NewHttpClient(tlsClient.NewNoopLogger(), options...)
-	if err != nil {
-		return nil
-	}
 	instance := &Gpt35{
-		Client:      client,
 		MaxUseCount: 1,
-		ExpiresIn:   common.GetTimestampSecond(config.CONFIG.AuthED),
+		ExpiresIn:   common.GetTimestampSecond(config.AuthED),
 		Session:     &session{},
 		Ua:          Ua,
 		Language:    Language,
+	}
+	// 获取代理池
+	ProxyPoolInstance := ProxyPool.GetProxyPoolInstance()
+	// 如果代理池中有代理数大于 1 则使用 各自requestClient
+	if len(ProxyPoolInstance.Proxies) > 1 {
+		instance.RequestClient = requestclient.NewTlsClient(300, profiles.Okhttp4Android13)
+	} else {
+		instance.RequestClient = requestclient.GetInstance()
+	}
+	err := instance.RequestClient.SetProxy(ProxyPoolInstance.GetProxy().String())
+	if err != nil {
+		logger.Logger.Error(fmt.Sprint("SetProxy Error: ", err))
 	}
 	// 获取新的 session
 	err = instance.getNewSession()
@@ -95,7 +96,7 @@ func (G *Gpt35) getNewSession() error {
 	request.Header.Set("accept-language", G.Language)
 	request.Header.Set("oai-language", G.Language)
 	// 发送 POST 请求
-	response, err := G.Client.Do(request)
+	response, err := G.RequestClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -115,7 +116,7 @@ func (G *Gpt35) getNewSession() error {
 }
 
 func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, error) {
-	request, err := fhttp.NewRequest(method, url, body)
+	request, err := G.RequestClient.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}

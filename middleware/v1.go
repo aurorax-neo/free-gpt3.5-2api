@@ -60,7 +60,7 @@ func V1Auth(c *gin.Context) {
 		return
 	}
 	// 判断 authToken 是否在 config.CONFIG.AUTHORIZATIONS 列表
-	if !inArray(authToken, config.CONFIG.AUTHORIZATIONS) {
+	if !inArray(authToken, config.AUTHORIZATIONS) {
 		common.ErrorResponse(c, 401, "Incorrect API key provided: sk-4yNZz***************************************6mjw.", nil)
 		return
 	}

@@ -3,9 +3,9 @@ package chat
 import (
 	"encoding/json"
 	"fmt"
+	"free-gpt3.5-2api/Gpt35Pool"
 	"free-gpt3.5-2api/chat"
 	"free-gpt3.5-2api/common"
-	"free-gpt3.5-2api/pool"
 	v1 "free-gpt3.5-2api/v1"
 	"free-gpt3.5-2api/v1/chat/reqmodel"
 	"free-gpt3.5-2api/v1/chat/respmodel"
@@ -21,10 +21,10 @@ import (
 
 func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	// 获取 chat 实例
-	ChatGpt35 := pool.GetGpt35PoolInstance().GetGpt35(3)
+	ChatGpt35 := Gpt35Pool.GetGpt35PoolInstance().GetGpt35(3)
 	if ChatGpt35 == nil {
 		logger.Logger.Error("Pool GetGpt35 is empty")
-		common.ErrorResponse(c, http.StatusInternalServerError, "Pool GetGpt35 is empty", nil)
+		common.ErrorResponse(c, http.StatusInternalServerError, "Pool GetGpt35 is empty,please change the IP address or use a proxy to try again.", nil)
 		return
 	}
 	// 转换请求
@@ -51,7 +51,7 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 		request.Header.Set("Openai-Sentinel-Proof-Token", ChatGpt35.Session.ProofWork.Ospt)
 	}
 	// 发送请求
-	response, err := ChatGpt35.Client.Do(request)
+	response, err := ChatGpt35.RequestClient.Do(request)
 	if err != nil {
 		common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 		logger.Logger.Error(err.Error())
@@ -62,7 +62,6 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	}(response.Body)
 	if response.StatusCode != http.StatusOK {
 		logger.Logger.Error(fmt.Sprint(response.StatusCode))
-		ChatGpt35.MaxUseCount = 0
 		common.ErrorResponse(c, response.StatusCode, "", nil)
 		return
 	}
@@ -130,6 +129,11 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Re
 		}
 		chatResp35 := &respmodel.ChatResp35{}
 		err = json.Unmarshal([]byte(data), chatResp35)
+		if chatResp35.Error != nil && !handlingSigns {
+			logger.Logger.Error(fmt.Sprint(chatResp35.Error))
+			common.ErrorResponse(c, http.StatusInternalServerError, "", chatResp35.Error)
+			return
+		}
 		// 脏数据不处理
 		if err != nil {
 			continue
@@ -233,6 +237,11 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.
 		}
 		chatResp35 := &respmodel.ChatResp35{}
 		err = json.Unmarshal([]byte(data), chatResp35)
+		if chatResp35.Error != nil && !handlingSigns {
+			logger.Logger.Error(fmt.Sprint(chatResp35.Error))
+			common.ErrorResponse(c, http.StatusInternalServerError, "", chatResp35.Error)
+			return
+		}
 		// 脏数据不处理
 		if err != nil {
 			continue
