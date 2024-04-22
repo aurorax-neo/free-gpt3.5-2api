@@ -44,7 +44,7 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 	// 加锁
 	G.Lock.Lock()
 	defer G.Lock.Unlock()
-	if G.IsLiveGpt35(G.Index) {
+	if G.IsLiveGpt35(G.Index) { //有缓存
 		// 获取 Gpt35 实例
 		gpt35 := G.Gpt35s[G.Index]
 		// 可用次数减 1
@@ -59,16 +59,18 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 			Language:      gpt35.Language,
 		}
 		// 更新 index 的 Gpt35 实例
-		G.updateGpt35AtIndex(G.Index)
+		go G.updateGpt35AtIndex(G.Index)
 		// 索引加 1，采用取模运算实现循环
 		G.Index = (G.Index + 1) % G.MaxCount
 		return &gpt35_
-	} else if retry > 0 {
+	} else if retry > 0 { //无缓存或者缓存无效
 		// 释放锁 防止死锁
 		G.Lock.Unlock()
 		defer G.Lock.Lock()
 		// 更新 index 的 Gpt35 实例
 		G.updateGpt35AtIndex(G.Index)
+		// 等待 Gpt35 实例刷新完成
+		G.waitGpt35AtIndexUpdated(G.Index)
 		// 保证不会死循环
 		if retry == 1 {
 			// 索引加 1，采用取模运算实现循环
@@ -96,7 +98,8 @@ func (G *Gpt35Pool) IsLiveGpt35(index int) bool {
 	//判断是否为空
 	if G.Gpt35s[index] == nil || //空的
 		G.Gpt35s[index].MaxUseCount <= 0 || //无可用次数
-		G.Gpt35s[index].ExpiresIn <= common.GetTimestampSecond(0) {
+		G.Gpt35s[index].ExpiresIn <= common.GetTimestampSecond(0) ||
+		G.Gpt35s[index].IsUpdating {
 		return false
 	}
 	return true
@@ -106,11 +109,39 @@ func (G *Gpt35Pool) updateGpt35AtIndex(index int) bool {
 	if index < 0 || index >= len(G.Gpt35s) {
 		return false
 	}
+	if G.Gpt35s[index] != nil && G.Gpt35s[index].IsUpdating {
+		return false
+	}
 	if !G.IsLiveGpt35(index) {
+		// 标志 Gpt35 实例正在刷新
+		if G.Gpt35s[index] != nil {
+			G.Gpt35s[index].IsUpdating = true
+		}
 		G.Gpt35s[index] = chat.NewGpt35()
+		// 标志 Gpt35 没有正在刷新
+		if G.Gpt35s[index] != nil {
+			G.Gpt35s[index].IsUpdating = false
+		}
 		return true
 	}
+	// 标志 Gpt35 没有正在刷新
+	if G.Gpt35s[index] != nil {
+		G.Gpt35s[index].IsUpdating = false
+	}
 	return false
+}
+
+func (G *Gpt35Pool) waitGpt35AtIndexUpdated(index int) {
+	// 加锁
+	G.Lock.Lock()
+	defer G.Lock.Unlock()
+	// 等待 Gpt35 实例刷新完成
+	for {
+		if G.Gpt35s[index] == nil || !G.Gpt35s[index].IsUpdating {
+			break
+		}
+		time.Sleep(time.Millisecond * 100)
+	}
 }
 
 func (G *Gpt35Pool) updateGpt35Pool() {

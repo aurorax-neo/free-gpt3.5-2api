@@ -33,6 +33,7 @@ type Gpt35 struct {
 	Session       *session
 	Ua            string
 	Language      string
+	IsUpdating    bool
 }
 
 type session struct {
@@ -60,6 +61,7 @@ func NewGpt35() *Gpt35 {
 		Session:     &session{},
 		Ua:          Ua,
 		Language:    Language,
+		IsUpdating:  false,
 	}
 	// 获取代理池
 	ProxyPoolInstance := ProxyPool.GetProxyPoolInstance()
@@ -70,8 +72,8 @@ func NewGpt35() *Gpt35 {
 		instance.Language = common.RandomLanguage()
 	} else {
 		instance.RequestClient = requestclient.GetInstance()
-		instance.Ua = Ua
-		instance.Language = Language
+		instance.Ua = browser.Random()
+		instance.Language = common.RandomLanguage()
 	}
 	err := instance.RequestClient.SetProxy(ProxyPoolInstance.GetProxy().String())
 	if err != nil {
