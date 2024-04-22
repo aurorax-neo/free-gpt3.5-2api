@@ -20,11 +20,11 @@ const BaseUrl = "https://chat.openai.com"
 const ApiUrl = BaseUrl + "/backend-anon/conversation"
 const SessionUrl = BaseUrl + "/backend-anon/sentinel/chat-requirements"
 
-// Language 随机生成语言
-var Language = common.RandomLanguage()
+// Ua User-Agent
+var Ua = browser.Safari()
 
-// Ua 随机生成 User-Agent
-var Ua = browser.Random()
+// Language 语言
+var Language = common.RandomLanguage()
 
 type Gpt35 struct {
 	RequestClient requestclient.RequestClient
@@ -68,12 +68,8 @@ func NewGpt35() *Gpt35 {
 	// 如果代理池中有代理数大于 1 则使用 各自requestClient
 	if len(ProxyPoolInstance.Proxies) > 1 {
 		instance.RequestClient = requestclient.NewTlsClient(300, profiles.Okhttp4Android13)
-		instance.Ua = browser.Random()
-		instance.Language = common.RandomLanguage()
 	} else {
 		instance.RequestClient = requestclient.GetInstance()
-		instance.Ua = browser.Random()
-		instance.Language = common.RandomLanguage()
 	}
 	err := instance.RequestClient.SetProxy(ProxyPoolInstance.GetProxy().String())
 	if err != nil {
