@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"free-gpt3.5-2api/ProxyPool"
+	"free-gpt3.5-2api/RequestClient"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
-	"free-gpt3.5-2api/requestclient"
 	browser "github.com/EDDYCJY/fake-useragent"
 	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
@@ -20,14 +20,8 @@ const BaseUrl = "https://chat.openai.com"
 const ApiUrl = BaseUrl + "/backend-anon/conversation"
 const SessionUrl = BaseUrl + "/backend-anon/sentinel/chat-requirements"
 
-// Ua User-Agent
-var Ua = browser.Safari()
-
-// Language 语言
-var Language = common.RandomLanguage()
-
 type Gpt35 struct {
-	RequestClient requestclient.RequestClient
+	RequestClient RequestClient.RequestClient
 	MaxUseCount   int
 	ExpiresIn     int64
 	Session       *session
@@ -59,17 +53,17 @@ func NewGpt35() *Gpt35 {
 		MaxUseCount: 1,
 		ExpiresIn:   common.GetTimestampSecond(config.AuthED),
 		Session:     &session{},
-		Ua:          Ua,
-		Language:    Language,
+		Ua:          browser.Safari(),
+		Language:    common.RandomLanguage(),
 		IsUpdating:  false,
 	}
 	// 获取代理池
 	ProxyPoolInstance := ProxyPool.GetProxyPoolInstance()
 	// 如果代理池中有代理数大于 1 则使用 各自requestClient
 	if len(ProxyPoolInstance.Proxies) > 1 {
-		instance.RequestClient = requestclient.NewTlsClient(300, profiles.Okhttp4Android13)
+		instance.RequestClient = RequestClient.NewTlsClient(300, profiles.Okhttp4Android13)
 	} else {
-		instance.RequestClient = requestclient.GetInstance()
+		instance.RequestClient = RequestClient.GetInstance()
 	}
 	err := instance.RequestClient.SetProxy(ProxyPoolInstance.GetProxy().String())
 	if err != nil {
@@ -95,8 +89,6 @@ func (G *Gpt35) getNewSession() error {
 	}
 	// 设置请求头
 	request.Header.Set("oai-device-id", G.Session.OaiDeviceId)
-	request.Header.Set("accept-language", G.Language)
-	request.Header.Set("oai-language", G.Language)
 	// 发送 POST 请求
 	response, err := G.RequestClient.Do(request)
 	if err != nil {
@@ -124,6 +116,7 @@ func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, 
 	}
 	request.Header.Set("origin", common.GetOrigin(BaseUrl))
 	request.Header.Set("referer", common.GetOrigin(BaseUrl))
+	request.Header.Set("authority", common.GetOrigin(BaseUrl))
 	request.Header.Set("accept", "*/*")
 	request.Header.Set("cache-control", "no-cache")
 	request.Header.Set("content-type", "application/json")

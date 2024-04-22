@@ -1,8 +1,8 @@
-package chat
+package v1Chat
 
 import (
 	"free-gpt3.5-2api/common"
-	"free-gpt3.5-2api/v1/chat/reqmodel"
+	"free-gpt3.5-2api/service/v1Chat/reqmodel"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -15,5 +15,5 @@ func Completions(c *gin.Context) {
 		common.ErrorResponse(c, http.StatusBadRequest, "Invalid parameter", nil)
 		return
 	}
-	gpt35(c, apiReq)
+	Gpt35(c, apiReq)
 }

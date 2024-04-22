@@ -1,4 +1,4 @@
-package Gpt35Pool
+package Pool
 
 import (
 	"fmt"
@@ -10,14 +10,14 @@ import (
 	"time"
 )
 
-func init() {
-	GetGpt35PoolInstance()
-}
-
 var (
 	instance *Gpt35Pool
 	once     sync.Once
 )
+
+func init() {
+	instance = GetGpt35PoolInstance()
+}
 
 type Gpt35Pool struct {
 	Gpt35s   []*chat.Gpt35
@@ -33,8 +33,8 @@ func GetGpt35PoolInstance() *Gpt35Pool {
 			Index:    0,
 			MaxCount: config.PoolMaxCount,
 		}
-		logger.Logger.Info(fmt.Sprint("PoolMaxCount: ", config.PoolMaxCount, ", AuthExpirationDate: ", config.AuthED, ", Init Gpt35Pool..."))
-		// 定时刷新 Gpt35Pool
+		logger.Logger.Info(fmt.Sprint("PoolMaxCount: ", config.PoolMaxCount, ", AuthExpirationDate: ", config.AuthED, ", Init Pool..."))
+		// 定时刷新 Pool
 		go instance.timingUpdateGpt35Pool(60)
 	})
 	return instance

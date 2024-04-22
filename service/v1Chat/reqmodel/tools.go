@@ -1,7 +1,7 @@
 package reqmodel
 
 import (
-	v1 "free-gpt3.5-2api/v1"
+	"free-gpt3.5-2api/service/v1"
 	"github.com/google/uuid"
 )
 

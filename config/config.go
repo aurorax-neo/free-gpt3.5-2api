@@ -9,7 +9,6 @@ import (
 )
 
 var (
-	LogLevel       string
 	Bind           string
 	Port           string
 	Proxy          []string
