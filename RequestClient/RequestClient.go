@@ -1,4 +1,4 @@
-package requestclient
+package RequestClient
 
 import (
 	fhttp "github.com/bogdanfinn/fhttp"

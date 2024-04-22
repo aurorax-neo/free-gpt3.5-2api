@@ -1,4 +1,4 @@
-package requestclient
+package RequestClient
 
 import (
 	"fmt"
