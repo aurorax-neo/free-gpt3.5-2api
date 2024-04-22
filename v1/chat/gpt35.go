@@ -23,8 +23,9 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	// 获取 chat 实例
 	ChatGpt35 := Gpt35Pool.GetGpt35PoolInstance().GetGpt35(3)
 	if ChatGpt35 == nil {
-		logger.Logger.Error("Pool GetGpt35 is empty")
-		common.ErrorResponse(c, http.StatusInternalServerError, "Pool GetGpt35 is empty,please change the IP address or use a proxy to try again.", nil)
+		errStr := "please restart the program、change the IP address、use a proxy to try again."
+		logger.Logger.Error(errStr)
+		common.ErrorResponse(c, http.StatusUnauthorized, errStr, nil)
 		return
 	}
 	// 转换请求
@@ -32,16 +33,17 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	// 请求参数
 	body, err := common.Struct2BytesBuffer(ChatReq35)
 	if err != nil {
-		common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 		logger.Logger.Error(err.Error())
+		common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 		return
 
 	}
 	// 生成请求
 	request, err := ChatGpt35.NewRequest(fhttp.MethodPost, chat.ApiUrl, body)
 	if err != nil || request == nil {
-		common.ErrorResponse(c, http.StatusInternalServerError, "", err)
-		logger.Logger.Error(err.Error())
+		errStr := "Request is nil or error"
+		logger.Logger.Error("Request is nil or error")
+		common.ErrorResponse(c, http.StatusInternalServerError, errStr, err)
 		return
 	}
 	// 设置请求头
@@ -53,16 +55,18 @@ func gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	// 发送请求
 	response, err := ChatGpt35.RequestClient.Do(request)
 	if err != nil {
-		common.ErrorResponse(c, http.StatusInternalServerError, "", err)
-		logger.Logger.Error(err.Error())
+		errStr := "RequestClient Do error"
+		logger.Logger.Error(fmt.Sprint(errStr, err))
+		common.ErrorResponse(c, http.StatusInternalServerError, errStr, err)
 		return
 	}
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(response.Body)
 	if response.StatusCode != http.StatusOK {
-		logger.Logger.Error(fmt.Sprint(response.StatusCode))
-		common.ErrorResponse(c, response.StatusCode, "", nil)
+		errStr := "Request error"
+		logger.Logger.Error(fmt.Sprint(errStr, response.StatusCode))
+		common.ErrorResponse(c, response.StatusCode, errStr, nil)
 		return
 	}
 	// 流式返回
@@ -85,8 +89,8 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Re
 	for {
 		event, err := decoder.Decode()
 		if err != nil {
-			common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 			logger.Logger.Error(err.Error())
+			common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 			break
 		}
 		name := event.Event()
@@ -193,8 +197,8 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.
 	for {
 		event, err := decoder.Decode()
 		if err != nil {
-			common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 			logger.Logger.Error(err.Error())
+			common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 			break
 		}
 		data := event.Data()
