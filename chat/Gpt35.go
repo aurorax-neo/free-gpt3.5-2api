@@ -13,7 +13,6 @@ import (
 	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/google/uuid"
 	"io"
-	"strings"
 )
 
 const BaseUrl = "https://chat.openai.com"
@@ -53,7 +52,7 @@ func NewGpt35() *Gpt35 {
 		MaxUseCount: 1,
 		ExpiresIn:   common.GetTimestampSecond(config.AuthED),
 		Session:     &session{},
-		Ua:          browser.Safari(),
+		Ua:          browser.Firefox(),
 		Language:    common.RandomLanguage(),
 		IsUpdating:  false,
 	}
@@ -61,7 +60,7 @@ func NewGpt35() *Gpt35 {
 	ProxyPoolInstance := ProxyPool.GetProxyPoolInstance()
 	// 如果代理池中有代理数大于 1 则使用 各自requestClient
 	if len(ProxyPoolInstance.Proxies) > 1 {
-		instance.RequestClient = RequestClient.NewTlsClient(300, profiles.Okhttp4Android13)
+		instance.RequestClient = RequestClient.NewTlsClient(300, profiles.Firefox_102)
 	} else {
 		instance.RequestClient = RequestClient.GetInstance()
 	}
@@ -72,7 +71,11 @@ func NewGpt35() *Gpt35 {
 	// 获取新的 session
 	err = instance.getNewSession()
 	if err != nil {
-		return nil
+		return &Gpt35{
+			MaxUseCount: 0,
+			ExpiresIn:   0,
+			IsUpdating:  true,
+		}
 	}
 	return instance
 }
@@ -80,10 +83,8 @@ func NewGpt35() *Gpt35 {
 func (G *Gpt35) getNewSession() error {
 	// 生成新的设备 ID
 	G.Session.OaiDeviceId = uuid.New().String()
-	// 设置请求体
-	body := strings.NewReader(`{"conversation_mode_kind":"primary_assistant"}`)
 	// 创建请求
-	request, err := G.NewRequest("POST", SessionUrl, body)
+	request, err := G.NewRequest("POST", SessionUrl, nil)
 	if err != nil {
 		return err
 	}
@@ -116,7 +117,6 @@ func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, 
 	}
 	request.Header.Set("origin", common.GetOrigin(BaseUrl))
 	request.Header.Set("referer", common.GetOrigin(BaseUrl))
-	request.Header.Set("authority", common.GetOrigin(BaseUrl))
 	request.Header.Set("accept", "*/*")
 	request.Header.Set("cache-control", "no-cache")
 	request.Header.Set("content-type", "application/json")
@@ -125,8 +125,8 @@ func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, 
 	request.Header.Set("sec-fetch-dest", "empty")
 	request.Header.Set("sec-fetch-mode", "cors")
 	request.Header.Set("sec-fetch-site", "same-origin")
+	request.Header.Set("oai-language", "en-US")
 	request.Header.Set("accept-language", G.Language)
-	request.Header.Set("oai-language", G.Language)
 	request.Header.Set("User-Agent", G.Ua)
 	return request, nil
 }
