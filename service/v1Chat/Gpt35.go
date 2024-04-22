@@ -56,7 +56,7 @@ func Gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	response, err := ChatGpt35.RequestClient.Do(request)
 	if err != nil {
 		errStr := "RequestClient Do error"
-		logger.Logger.Error(fmt.Sprint(errStr, err))
+		logger.Logger.Error(fmt.Sprint(errStr, " ", err))
 		common.ErrorResponse(c, http.StatusInternalServerError, errStr, err)
 		return
 	}
@@ -65,7 +65,7 @@ func Gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	}(response.Body)
 	if response.StatusCode != http.StatusOK {
 		errStr := "Request error"
-		logger.Logger.Error(fmt.Sprint(errStr, response.StatusCode))
+		logger.Logger.Error(fmt.Sprint(errStr, " ", response.StatusCode))
 		common.ErrorResponse(c, response.StatusCode, errStr, nil)
 		return
 	}

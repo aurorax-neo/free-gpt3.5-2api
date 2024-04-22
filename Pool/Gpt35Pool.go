@@ -35,9 +35,20 @@ func GetGpt35PoolInstance() *Gpt35Pool {
 		}
 		logger.Logger.Info(fmt.Sprint("PoolMaxCount: ", config.PoolMaxCount, ", AuthExpirationDate: ", config.AuthED, ", Init Pool..."))
 		// 定时刷新 Pool
-		go instance.timingUpdateGpt35Pool(60)
+		go instance.timingUpdateGpt35Pool(8)
 	})
 	return instance
+}
+
+func (G *Gpt35Pool) IsLiveGpt35(index int) bool {
+	//判断是否为空
+	if G.Gpt35s[index] == nil ||
+		G.Gpt35s[index].MaxUseCount <= 0 || //无可用次数
+		G.Gpt35s[index].ExpiresIn <= common.GetTimestampSecond(0) ||
+		G.Gpt35s[index].IsUpdating {
+		return false
+	}
+	return true
 }
 
 func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
@@ -64,6 +75,8 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 		G.Index = (G.Index + 1) % G.MaxCount
 		return &gpt35_
 	} else if retry > 0 { //无缓存或者缓存无效
+		// time
+		time.Sleep(time.Millisecond * 200)
 		// 释放锁 防止死锁
 		G.Lock.Unlock()
 		defer G.Lock.Lock()
@@ -94,58 +107,33 @@ func (G *Gpt35Pool) timingUpdateGpt35Pool(sec int) {
 	}
 }
 
-func (G *Gpt35Pool) IsLiveGpt35(index int) bool {
-	//判断是否为空
-	if G.Gpt35s[index] == nil || //空的
-		G.Gpt35s[index].MaxUseCount <= 0 || //无可用次数
-		G.Gpt35s[index].ExpiresIn <= common.GetTimestampSecond(0) ||
-		G.Gpt35s[index].IsUpdating {
-		return false
-	}
-	return true
-}
-
-func (G *Gpt35Pool) updateGpt35AtIndex(index int) bool {
+func (G *Gpt35Pool) updateGpt35AtIndex(index int) {
 	if index < 0 || index >= len(G.Gpt35s) {
-		return false
-	}
-	if G.Gpt35s[index] != nil && G.Gpt35s[index].IsUpdating {
-		return false
+		return
 	}
 	if !G.IsLiveGpt35(index) {
-		// 标志 Gpt35 实例正在刷新
 		if G.Gpt35s[index] != nil {
+			// 标志 Gpt35 实例正在刷新
 			G.Gpt35s[index].IsUpdating = true
 		}
 		G.Gpt35s[index] = chat.NewGpt35()
-		// 标志 Gpt35 没有正在刷新
-		if G.Gpt35s[index] != nil {
-			G.Gpt35s[index].IsUpdating = false
-		}
-		return true
 	}
-	// 标志 Gpt35 没有正在刷新
-	if G.Gpt35s[index] != nil {
-		G.Gpt35s[index].IsUpdating = false
-	}
-	return false
 }
 
 func (G *Gpt35Pool) waitGpt35AtIndexUpdated(index int) {
-	// 加锁
-	G.Lock.Lock()
-	defer G.Lock.Unlock()
+	endTime := common.GetTimestampSecond(3)
 	// 等待 Gpt35 实例刷新完成
-	for {
+	for i := common.GetTimestampSecond(0); i < endTime; i = common.GetTimestampSecond(0) {
 		if G.Gpt35s[index] == nil || !G.Gpt35s[index].IsUpdating {
 			break
 		}
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Millisecond * 200)
 	}
 }
 
 func (G *Gpt35Pool) updateGpt35Pool() {
 	for i := 0; i < G.MaxCount; i++ {
 		G.updateGpt35AtIndex(i)
+		time.Sleep(time.Millisecond * 8)
 	}
 }
