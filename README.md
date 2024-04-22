@@ -53,6 +53,7 @@ curl --location --request POST 'http://127.0.0.1:9846/v1/chat/completions' \
 
 ```
 LOG_LEVEL=info    # debug, info, warn, error
+LOG_PATH=         # 日志文件路径，默认为空（不生成日志文件）
 BIND=0.0.0.0      # 127.0.0.1
 PORT=3040
 PROXY=            # http://127.0.0.1:7890,http://127.0.0.1:7890 已支持多个代理（使用英文 "," 分隔）
@@ -75,7 +76,13 @@ mkdir -p $PWD/free-gpt3.5-2api
 ##### 2.拉取镜像启动
 
 ```
-docker run -itd  --name=free-gpt3.5-2api -p 9846:3040 -v $PWD/free-gpt3.5-2api/logs:/app/logs ghcr.io/aurorax-neo/free-gpt3.5-2api
+docker run -itd  --name=free-gpt3.5-2api -p 9846:3040 ghcr.io/aurorax-neo/free-gpt3.5-2api
+```
+
+##### 3.更新容器
+
+```
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower -cR free-gpt3.5-2api --debug
 ```
 
 ### Koyeb部署
