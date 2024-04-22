@@ -89,8 +89,6 @@ func (G *Gpt35) getNewSession() error {
 	}
 	// 设置请求头
 	request.Header.Set("oai-device-id", G.Session.OaiDeviceId)
-	request.Header.Set("accept-language", G.Language)
-	request.Header.Set("oai-language", G.Language)
 	// 发送 POST 请求
 	response, err := G.RequestClient.Do(request)
 	if err != nil {
@@ -118,6 +116,7 @@ func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, 
 	}
 	request.Header.Set("origin", common.GetOrigin(BaseUrl))
 	request.Header.Set("referer", common.GetOrigin(BaseUrl))
+	request.Header.Set("authority", common.GetOrigin(BaseUrl))
 	request.Header.Set("accept", "*/*")
 	request.Header.Set("cache-control", "no-cache")
 	request.Header.Set("content-type", "application/json")

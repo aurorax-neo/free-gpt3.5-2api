@@ -10,7 +10,7 @@ import (
 func SetRouter(router *gin.Engine) {
 	router.GET("/", Index)
 	router.GET("/ping", Ping)
-	v1Router := router.Group("/v1Chat")
+	v1Router := router.Group("/v1")
 	v1Router.Use(V1Cors)
 	v1Router.Use(V1Request)
 	v1Router.Use(V1Response)
