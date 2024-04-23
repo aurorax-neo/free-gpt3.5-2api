@@ -63,7 +63,7 @@ func NewProxyPool(proxies []*Proxy) *ProxyPool {
 
 func (PP *ProxyPool) GetProxy() *Proxy {
 	// 如果没有代理则返回空代理
-	if len(PP.Proxies) == 0 {
+	if len(PP.Proxies) == 1 {
 		return PP.Proxies[0]
 	}
 	// 获取代理
