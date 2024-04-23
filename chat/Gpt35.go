@@ -72,9 +72,9 @@ func NewGpt35() *Gpt35 {
 	err = instance.getNewSession()
 	if err != nil {
 		return &Gpt35{
-			MaxUseCount: 0,
-			ExpiresIn:   0,
-			IsUpdating:  true,
+			MaxUseCount: -1,
+			ExpiresIn:   -1,
+			IsUpdating:  false,
 		}
 	}
 	return instance

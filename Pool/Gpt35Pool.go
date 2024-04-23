@@ -75,8 +75,6 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 		G.Index = (G.Index + 1) % G.MaxCount
 		return &gpt35_
 	} else if retry > 0 { //无缓存或者缓存无效
-		// time
-		time.Sleep(time.Millisecond * 200)
 		// 释放锁 防止死锁
 		G.Lock.Unlock()
 		defer G.Lock.Lock()
