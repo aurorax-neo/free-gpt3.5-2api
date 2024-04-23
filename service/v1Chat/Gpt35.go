@@ -3,7 +3,7 @@ package v1Chat
 import (
 	"encoding/json"
 	"fmt"
-	"free-gpt3.5-2api/Pool"
+	"free-gpt3.5-2api/Gpt35Pool"
 	"free-gpt3.5-2api/chat"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/service/v1"
@@ -21,7 +21,7 @@ import (
 
 func Gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	// 获取 chat 实例
-	ChatGpt35 := Pool.GetGpt35PoolInstance().GetGpt35(3)
+	ChatGpt35 := Gpt35Pool.GetGpt35PoolInstance().GetGpt35(3)
 	if ChatGpt35 == nil {
 		errStr := "please restart the program、change the IP address、use a proxy to try again."
 		logger.Logger.Error(errStr)

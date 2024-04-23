@@ -1,4 +1,4 @@
-package Pool
+package Gpt35Pool
 
 import (
 	"fmt"
@@ -37,8 +37,8 @@ func newGpt35Pool(capacity int) *Gpt35Pool {
 func GetGpt35PoolInstance() *Gpt35Pool {
 	once.Do(func() {
 		instance = newGpt35Pool(config.PoolMaxCount)
-		logger.Logger.Info(fmt.Sprint("PoolMaxCount: ", config.PoolMaxCount, ", AuthExpirationDate: ", config.AuthED, ", Init Pool..."))
-		// 定时刷新 Pool
+		logger.Logger.Info(fmt.Sprint("PoolMaxCount: ", config.PoolMaxCount, ", AuthExpirationDate: ", config.AuthED, ", Init Gpt35Pool..."))
+		// 定时刷新 Gpt35Pool
 		instance.updateGpt35Pool(time.Millisecond * 200)
 	})
 	return instance
@@ -74,18 +74,7 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 	// 获取 Gpt35 实例
 	gpt35 := G.Dequeue()
 	if gpt35 != nil { //有缓存
-		// 可用次数减 1
-		gpt35.MaxUseCount--
-		// 返回 深拷贝的 Gpt35 实例
-		gpt35_ := chat.Gpt35{
-			RequestClient: gpt35.RequestClient,
-			MaxUseCount:   gpt35.MaxUseCount,
-			ExpiresIn:     gpt35.ExpiresIn,
-			Session:       gpt35.Session,
-			Ua:            gpt35.Ua,
-			Language:      gpt35.Language,
-		}
-		return &gpt35_
+		return gpt35
 	} else if retry > 0 {
 		// 递归获取 Gpt35 实例
 		time.Sleep(time.Millisecond * 200)
@@ -134,13 +123,23 @@ func (G *Gpt35Pool) Dequeue() *chat.Gpt35 {
 	}
 	// 获取 Gpt35 实例
 	gpt35 := G.data[G.head]
-	// 判断是否为无效 Gpt35 实例
-	if !G.isLiveGpt35(gpt35) {
-		G.head = (G.head + 1) % G.capacity
-		G.size--
-		return nil
+	// 判断是否为有效 Gpt35 实例
+	if G.isLiveGpt35(gpt35) {
+		// 可用次数减 1
+		gpt35.MaxUseCount--
+		// 返回深拷贝的 Gpt35 实例
+		return &chat.Gpt35{
+			RequestClient: gpt35.RequestClient,
+			MaxUseCount:   gpt35.MaxUseCount,
+			ExpiresIn:     gpt35.ExpiresIn,
+			Session:       gpt35.Session,
+			Ua:            gpt35.Ua,
+			Language:      gpt35.Language,
+		}
 	}
-	return gpt35
+	G.head = (G.head + 1) % G.capacity
+	G.size--
+	return nil
 }
 
 // RemoveAt 移除指定位置的元素
