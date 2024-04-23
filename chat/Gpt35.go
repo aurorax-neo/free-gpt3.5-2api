@@ -9,6 +9,7 @@ import (
 	"free-gpt3.5-2api/config"
 	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
+	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/google/uuid"
 	"io"
 )
@@ -78,7 +79,7 @@ func (G *Gpt35) getNewRequestClient(newType int) error {
 		return fmt.Errorf(errStr)
 	}
 	// 请求客户端
-	G.RequestClient = RequestClient.NewTlsClient(300, RequestClient.RandomClientProfile())
+	G.RequestClient = RequestClient.NewTlsClient(300, profiles.Safari_16_0)
 	if G.RequestClient == nil {
 		errStr := fmt.Sprint("RequestClient is nil")
 		logger.Logger.Debug(errStr)

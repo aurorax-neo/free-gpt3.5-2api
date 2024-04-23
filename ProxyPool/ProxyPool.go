@@ -37,7 +37,7 @@ func GetProxyPoolInstance() *ProxyPool {
 			Instance.AddProxy(&Proxy{
 				Link:     common.ParseUrl(px),
 				CanUseAt: common.GetTimestampSecond(0),
-				Ua:       browser.Random(),
+				Ua:       browser.Safari(),
 				Language: common.RandomLanguage(),
 			})
 		}
@@ -82,7 +82,7 @@ func (PP *ProxyPool) AddProxy(proxy *Proxy) {
 func (PP *ProxyPool) timingUpdateProxy(nanosecond time.Duration) {
 	common.TimingTask(nanosecond, func() {
 		for _, px := range PP.Proxies {
-			px.Ua = browser.Random()
+			px.Ua = browser.Safari()
 			px.Language = common.RandomLanguage()
 		}
 	})
