@@ -25,6 +25,7 @@ type ProxyPool struct {
 
 type Proxy struct {
 	Link     *url.URL
+	CanUseAt int64
 	Ua       string
 	Language string
 }
@@ -35,6 +36,7 @@ func GetProxyPoolInstance() *ProxyPool {
 		for _, px := range config.Proxy {
 			Instance.AddProxy(&Proxy{
 				Link:     common.ParseUrl(px),
+				CanUseAt: common.GetTimestampSecond(0),
 				Ua:       browser.Random(),
 				Language: common.RandomLanguage(),
 			})
@@ -50,6 +52,7 @@ func NewProxyPool(proxies []*Proxy) *ProxyPool {
 		Proxies: append([]*Proxy{
 			{
 				Link:     &url.URL{},
+				CanUseAt: common.GetTimestampSecond(0),
 				Ua:       browser.Random(),
 				Language: common.RandomLanguage(),
 			},

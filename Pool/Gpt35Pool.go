@@ -55,7 +55,7 @@ func (G *Gpt35Pool) updateGpt35Pool(nanosecond time.Duration) {
 			}
 		})
 		if !G.IsFull() {
-			G.Enqueue(chat.NewGpt35())
+			G.Enqueue(chat.NewGpt35(1))
 		}
 	})
 }
@@ -92,7 +92,7 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 		return G.GetGpt35(retry - 1)
 	}
 	// 缓存内无可用 Gpt35 实例，返回新 Gpt35 实例
-	return chat.NewGpt35()
+	return chat.NewGpt35(0)
 }
 
 // GetSize 获取队列当前元素个数
