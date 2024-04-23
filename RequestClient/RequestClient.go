@@ -24,7 +24,7 @@ var (
 
 func GetInstance() *TlsClient {
 	clientOnce.Do(func() {
-		Instance = NewTlsClient(300, profiles.Firefox_102)
+		Instance = NewTlsClient(300, profiles.Okhttp4Android13)
 	})
 	return Instance
 }

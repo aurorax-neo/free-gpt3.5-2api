@@ -52,7 +52,7 @@ func NewGpt35() *Gpt35 {
 		MaxUseCount: 1,
 		ExpiresIn:   common.GetTimestampSecond(config.AuthED),
 		Session:     &session{},
-		Ua:          browser.Firefox(),
+		Ua:          browser.Chrome(),
 		Language:    common.RandomLanguage(),
 		IsUpdating:  false,
 	}
@@ -60,7 +60,7 @@ func NewGpt35() *Gpt35 {
 	ProxyPoolInstance := ProxyPool.GetProxyPoolInstance()
 	// 如果代理池中有代理数大于 1 则使用 各自requestClient
 	if len(ProxyPoolInstance.Proxies) > 1 {
-		instance.RequestClient = RequestClient.NewTlsClient(300, profiles.Firefox_102)
+		instance.RequestClient = RequestClient.NewTlsClient(300, profiles.Okhttp4Android13)
 	} else {
 		instance.RequestClient = RequestClient.GetInstance()
 	}
@@ -72,9 +72,9 @@ func NewGpt35() *Gpt35 {
 	err = instance.getNewSession()
 	if err != nil {
 		return &Gpt35{
-			MaxUseCount: 0,
-			ExpiresIn:   0,
-			IsUpdating:  true,
+			MaxUseCount: -1,
+			ExpiresIn:   -1,
+			IsUpdating:  false,
 		}
 	}
 	return instance
