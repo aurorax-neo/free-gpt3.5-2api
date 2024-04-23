@@ -9,7 +9,6 @@ import (
 	"free-gpt3.5-2api/config"
 	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
-	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/google/uuid"
 	"io"
 )
@@ -20,6 +19,7 @@ const SessionUrl = BaseUrl + "/backend-anon/sentinel/chat-requirements"
 
 type Gpt35 struct {
 	RequestClient RequestClient.RequestClient
+	Proxy         *ProxyPool.Proxy
 	MaxUseCount   int
 	ExpiresIn     int64
 	Session       *session
@@ -45,7 +45,8 @@ type turnstile struct {
 	Required bool `json:"required"`
 }
 
-func NewGpt35() *Gpt35 {
+// NewGpt35 创建 Gpt35 实例 0 获取 1 刷新获取
+func NewGpt35(newType int) *Gpt35 {
 	// 创建 Gpt35 实例
 	gpt35 := &Gpt35{
 		MaxUseCount: -1,
@@ -53,7 +54,7 @@ func NewGpt35() *Gpt35 {
 		Session:     &session{},
 	}
 	// 获取请求客户端
-	err := gpt35.getNewRequestClient()
+	err := gpt35.getNewRequestClient(newType)
 	if err != nil {
 		return nil
 	}
@@ -65,26 +66,36 @@ func NewGpt35() *Gpt35 {
 	return gpt35
 }
 
-func (G *Gpt35) getNewRequestClient() error {
+func (G *Gpt35) getNewRequestClient(newType int) error {
 	// 获取代理池
 	ProxyPoolInstance := ProxyPool.GetProxyPoolInstance()
 	// 获取代理
-	proxy := ProxyPoolInstance.GetProxy()
+	G.Proxy = ProxyPoolInstance.GetProxy()
+	// 判断代理是否可用
+	if G.Proxy.CanUseAt > common.GetTimestampSecond(0) && newType == 1 {
+		errStr := fmt.Sprint(G.Proxy.Link, ": Proxy restricted, Reuse at ", G.Proxy.CanUseAt)
+		logger.Logger.Debug(errStr)
+		return fmt.Errorf(errStr)
+	}
 	// 请求客户端
-	G.RequestClient = RequestClient.NewTlsClient(300, profiles.Okhttp4Android13)
+	G.RequestClient = RequestClient.NewTlsClient(300, RequestClient.RandomClientProfile())
 	if G.RequestClient == nil {
-		logger.Logger.Error("RequestClient is nil")
-		return fmt.Errorf("RequestClient is nil")
+		errStr := fmt.Sprint("RequestClient is nil")
+		logger.Logger.Debug(errStr)
+		return fmt.Errorf(errStr)
 	}
 	// 设置代理
-	err := G.RequestClient.SetProxy(proxy.Link.String())
+	err := G.RequestClient.SetProxy(G.Proxy.Link.String())
 	if err != nil {
-		logger.Logger.Error(fmt.Sprint("SetProxy Error: ", err))
+		errStr := fmt.Sprint("SetProxy Error: ", err)
+		logger.Logger.Debug(errStr)
 	}
 	// 设置 User-Agent
-	G.Ua = proxy.Ua
+	G.Ua = G.Proxy.Ua
 	// 设置语言
-	G.Language = proxy.Language
+	G.Language = G.Proxy.Language
+	// 成功后更新代理的可用时间
+	G.Proxy.CanUseAt = common.GetTimestampSecond(0)
 	return nil
 }
 
@@ -104,6 +115,10 @@ func (G *Gpt35) getNewSession() error {
 		return err
 	}
 	if response.StatusCode != 200 {
+		if response.StatusCode == 429 {
+			G.Proxy.CanUseAt = common.GetTimestampSecond(600)
+		}
+		logger.Logger.Debug(fmt.Sprint("StatusCode: ", response.StatusCode))
 		return fmt.Errorf("StatusCode: %d", response.StatusCode)
 	}
 	defer func(Body io.ReadCloser) {

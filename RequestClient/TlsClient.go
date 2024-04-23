@@ -7,6 +7,8 @@ import (
 	tlsClient "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
 	"io"
+	"math/rand"
+	"time"
 )
 
 type TlsClient struct {
@@ -30,6 +32,23 @@ func NewTlsClient(timeoutSeconds int, clientProfile profiles.ClientProfile) *Tls
 	}
 }
 
+func RandomClientProfile() profiles.ClientProfile {
+	// 初始化随机数生成器
+	seed := time.Now().UnixNano()
+	rng := rand.New(rand.NewSource(seed))
+	clientProfiles := []profiles.ClientProfile{
+		profiles.Firefox_102,
+		profiles.Safari_15_6_1,
+		profiles.Safari_16_0,
+		profiles.Chrome_110,
+		profiles.Okhttp4Android13,
+		profiles.CloudflareCustom,
+		profiles.Firefox_117,
+	}
+	// 随机选择一个
+	randomIndex := rng.Intn(len(clientProfiles))
+	return clientProfiles[randomIndex]
+}
 func (T *TlsClient) NewRequest(method, url string, body io.Reader) (*fhttp.Request, error) {
 	request, err := fhttp.NewRequest(method, url, body)
 	if err != nil {
