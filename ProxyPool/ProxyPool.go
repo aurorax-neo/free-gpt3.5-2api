@@ -3,6 +3,7 @@ package ProxyPool
 import (
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
+	browser "github.com/EDDYCJY/fake-useragent"
 	"net/url"
 	"sync"
 )
@@ -17,36 +18,53 @@ var (
 )
 
 type ProxyPool struct {
-	Proxies []*url.URL
+	Proxies []*Proxy
 	Index   int
+}
+
+type Proxy struct {
+	Link     *url.URL
+	Ua       string
+	Language string
 }
 
 func GetProxyPoolInstance() *ProxyPool {
 	Once.Do(func() {
-		Instance = NewProxyPool([]*url.URL{})
+		Instance = NewProxyPool()
 		for _, px := range config.Proxy {
-			Instance.AddProxy(common.ParseUrl(px))
+			proxy := &Proxy{
+				Link:     common.ParseUrl(px),
+				Ua:       browser.Random(),
+				Language: common.RandomLanguage(),
+			}
+			Instance.AddProxy(proxy)
 		}
 	})
 	return Instance
 }
 
-func NewProxyPool(proxies []*url.URL) *ProxyPool {
+func NewProxyPool() *ProxyPool {
 	return &ProxyPool{
-		Proxies: proxies,
+		Proxies: []*Proxy{},
 		Index:   0,
 	}
 }
 
-func (p *ProxyPool) GetProxy() *url.URL {
-	if len(p.Proxies) == 0 {
-		return &url.URL{}
+func (PP *ProxyPool) GetProxy() *Proxy {
+	// 如果没有代理则返回空代理
+	if len(PP.Proxies) == 0 {
+		return &Proxy{
+			Link:     &url.URL{},
+			Ua:       browser.Safari(),
+			Language: common.RandomLanguage(),
+		}
 	}
-	proxy := p.Proxies[p.Index]
-	p.Index = (p.Index + 1) % len(p.Proxies)
+	// 获取代理
+	proxy := PP.Proxies[PP.Index]
+	PP.Index = (PP.Index + 1) % len(PP.Proxies)
 	return proxy
 }
 
-func (p *ProxyPool) AddProxy(proxy *url.URL) {
-	p.Proxies = append(p.Proxies, proxy)
+func (PP *ProxyPool) AddProxy(proxy *Proxy) {
+	PP.Proxies = append(PP.Proxies, proxy)
 }

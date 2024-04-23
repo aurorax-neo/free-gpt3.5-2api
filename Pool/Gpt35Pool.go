@@ -74,21 +74,9 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 		// 索引加 1，采用取模运算实现循环
 		G.Index = (G.Index + 1) % G.MaxCount
 		return &gpt35_
-	} else if retry > 0 { //无缓存或者缓存无效
-		// 释放锁 防止死锁
-		G.Lock.Unlock()
-		defer G.Lock.Lock()
-		// 更新 index 的 Gpt35 实例
-		G.updateGpt35AtIndex(G.Index)
-		// 等待 Gpt35 实例刷新完成
-		G.waitGpt35AtIndexUpdated(G.Index)
-		// 保证不会死循环
-		if retry == 1 {
-			// 索引加 1，采用取模运算实现循环
-			G.Index = (G.Index + 1) % G.MaxCount
-		}
-		// 递归获取 Gpt35 实例
-		return G.GetGpt35(retry - 1)
+	} else if retry > 0 {
+		//无缓存或者缓存无效 直接获取 Gpt35 实例
+		return chat.NewGpt35()
 	}
 	return nil
 }
@@ -115,17 +103,6 @@ func (G *Gpt35Pool) updateGpt35AtIndex(index int) {
 			G.Gpt35s[index].IsUpdating = true
 		}
 		G.Gpt35s[index] = chat.NewGpt35()
-	}
-}
-
-func (G *Gpt35Pool) waitGpt35AtIndexUpdated(index int) {
-	endTime := common.GetTimestampSecond(3)
-	// 等待 Gpt35 实例刷新完成
-	for i := common.GetTimestampSecond(0); i < endTime; i = common.GetTimestampSecond(0) {
-		if G.Gpt35s[index] == nil || !G.Gpt35s[index].IsUpdating {
-			break
-		}
-		time.Sleep(time.Millisecond * 200)
 	}
 }
 
