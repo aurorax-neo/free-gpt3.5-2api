@@ -16,8 +16,8 @@ func Tokens(c *gin.Context) {
 		Count: 0,
 	}
 	instance := Pool.GetGpt35PoolInstance()
-	for i := 0; i < instance.MaxCount; i++ {
-		if instance.IsLiveGpt35(i) {
+	for i := 0; i < instance.GetCapacity(); i++ {
+		if instance.IsLiveGpt35(instance.Gpt35s[i]) {
 			resp.Count++
 		}
 	}

@@ -25,7 +25,6 @@ type Gpt35 struct {
 	Session       *session
 	Ua            string
 	Language      string
-	IsUpdating    bool
 }
 
 type session struct {
@@ -51,18 +50,17 @@ func NewGpt35() *Gpt35 {
 	gpt35 := &Gpt35{
 		MaxUseCount: -1,
 		ExpiresIn:   -1,
-		IsUpdating:  false,
 		Session:     &session{},
 	}
 	// 获取请求客户端
 	err := gpt35.getNewRequestClient()
 	if err != nil {
-		return gpt35
+		return nil
 	}
 	// 获取新session
 	err = gpt35.getNewSession()
 	if err != nil {
-		return gpt35
+		return nil
 	}
 	return gpt35
 }
@@ -121,8 +119,6 @@ func (G *Gpt35) getNewSession() error {
 	G.MaxUseCount = 1
 	// 设置 ExpiresIn
 	G.ExpiresIn = common.GetTimestampSecond(config.AuthED)
-	// 设置 IsUpdating
-	G.IsUpdating = false
 	return nil
 }
 
