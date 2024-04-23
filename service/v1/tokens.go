@@ -13,13 +13,7 @@ type TokensResp struct {
 
 func Tokens(c *gin.Context) {
 	resp := &TokensResp{
-		Count: 0,
-	}
-	instance := Pool.GetGpt35PoolInstance()
-	for i := 0; i < instance.GetCapacity(); i++ {
-		if instance.IsLiveGpt35(instance.Gpt35s[i]) {
-			resp.Count++
-		}
+		Count: Pool.GetGpt35PoolInstance().GetSize(),
 	}
 	logger.Logger.Info(fmt.Sprint("Pool Tokens: ", resp.Count))
 	c.JSON(200, resp)
