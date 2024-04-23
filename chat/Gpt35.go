@@ -7,7 +7,6 @@ import (
 	"free-gpt3.5-2api/RequestClient"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
-	browser "github.com/EDDYCJY/fake-useragent"
 	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/bogdanfinn/tls-client/profiles"
@@ -48,36 +47,47 @@ type turnstile struct {
 }
 
 func NewGpt35() *Gpt35 {
-	instance := &Gpt35{
-		MaxUseCount: 1,
-		ExpiresIn:   common.GetTimestampSecond(config.AuthED),
-		Session:     &session{},
-		Ua:          browser.Chrome(),
-		Language:    common.RandomLanguage(),
+	// 创建 Gpt35 实例
+	gpt35 := &Gpt35{
+		MaxUseCount: -1,
+		ExpiresIn:   -1,
 		IsUpdating:  false,
+		Session:     &session{},
 	}
+	// 获取请求客户端
+	err := gpt35.getNewRequestClient()
+	if err != nil {
+		return gpt35
+	}
+	// 获取新session
+	err = gpt35.getNewSession()
+	if err != nil {
+		return gpt35
+	}
+	return gpt35
+}
+
+func (G *Gpt35) getNewRequestClient() error {
 	// 获取代理池
 	ProxyPoolInstance := ProxyPool.GetProxyPoolInstance()
-	// 如果代理池中有代理数大于 1 则使用 各自requestClient
-	if len(ProxyPoolInstance.Proxies) > 1 {
-		instance.RequestClient = RequestClient.NewTlsClient(300, profiles.Okhttp4Android13)
-	} else {
-		instance.RequestClient = RequestClient.GetInstance()
+	// 获取代理
+	proxy := ProxyPoolInstance.GetProxy()
+	// 请求客户端
+	G.RequestClient = RequestClient.NewTlsClient(300, profiles.Okhttp4Android13)
+	if G.RequestClient == nil {
+		logger.Logger.Error("RequestClient is nil")
+		return fmt.Errorf("RequestClient is nil")
 	}
-	err := instance.RequestClient.SetProxy(ProxyPoolInstance.GetProxy().String())
+	// 设置代理
+	err := G.RequestClient.SetProxy(proxy.Link.String())
 	if err != nil {
 		logger.Logger.Error(fmt.Sprint("SetProxy Error: ", err))
 	}
-	// 获取新的 session
-	err = instance.getNewSession()
-	if err != nil {
-		return &Gpt35{
-			MaxUseCount: -1,
-			ExpiresIn:   -1,
-			IsUpdating:  false,
-		}
-	}
-	return instance
+	// 设置 User-Agent
+	G.Ua = proxy.Ua
+	// 设置语言
+	G.Language = proxy.Language
+	return nil
 }
 
 func (G *Gpt35) getNewSession() error {
@@ -107,6 +117,12 @@ func (G *Gpt35) getNewSession() error {
 	if G.Session.ProofWork.Required {
 		G.Session.ProofWork.Ospt = common.CalcProofToken(G.Session.ProofWork.Seed, G.Session.ProofWork.Difficulty, request.Header.Get("User-Agent"))
 	}
+	// 设置 MaxUseCount
+	G.MaxUseCount = 1
+	// 设置 ExpiresIn
+	G.ExpiresIn = common.GetTimestampSecond(config.AuthED)
+	// 设置 IsUpdating
+	G.IsUpdating = false
 	return nil
 }
 
@@ -125,7 +141,7 @@ func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, 
 	request.Header.Set("sec-fetch-dest", "empty")
 	request.Header.Set("sec-fetch-mode", "cors")
 	request.Header.Set("sec-fetch-site", "same-origin")
-	request.Header.Set("oai-language", "en-US")
+	request.Header.Set("oai-language", G.Language)
 	request.Header.Set("accept-language", G.Language)
 	request.Header.Set("User-Agent", G.Ua)
 	return request, nil
