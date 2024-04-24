@@ -1,7 +1,8 @@
-package chat
+package Gpt35
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"free-gpt3.5-2api/ProxyPool"
 	"free-gpt3.5-2api/RequestClient"
@@ -12,11 +13,12 @@ import (
 	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/google/uuid"
 	"io"
+	"strings"
 )
 
 const BaseUrl = "https://chat.openai.com"
 const ApiUrl = BaseUrl + "/backend-anon/conversation"
-const SessionUrl = BaseUrl + "/backend-anon/sentinel/chat-requirements"
+const SessionUrl = BaseUrl + "/backend-anon/sentinel/Gpt35-requirements"
 
 type Gpt35 struct {
 	RequestClient RequestClient.RequestClient
@@ -25,6 +27,7 @@ type Gpt35 struct {
 	ExpiresIn     int64
 	Session       *session
 	Ua            string
+	Cookies       []*fhttp.Cookie
 	Language      string
 }
 
@@ -53,9 +56,15 @@ func NewGpt35(newType int) *Gpt35 {
 		MaxUseCount: -1,
 		ExpiresIn:   -1,
 		Session:     &session{},
+		Ua:          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.0.0 Safari/537.36",
 	}
 	// 获取请求客户端
 	err := gpt35.getNewRequestClient(newType)
+	if err != nil {
+		return nil
+	}
+	// 获取 cookies
+	err = gpt35.getCookies()
 	if err != nil {
 		return nil
 	}
@@ -75,11 +84,10 @@ func (G *Gpt35) getNewRequestClient(newType int) error {
 	// 判断代理是否可用
 	if G.Proxy.CanUseAt > common.GetTimestampSecond(0) && newType == 1 {
 		errStr := fmt.Sprint(G.Proxy.Link, ": Proxy restricted, Reuse at ", G.Proxy.CanUseAt)
-		logger.Logger.Debug(errStr)
 		return fmt.Errorf(errStr)
 	}
 	// 请求客户端
-	G.RequestClient = RequestClient.NewTlsClient(300, profiles.Safari_16_0)
+	G.RequestClient = RequestClient.NewTlsClient(300, profiles.Safari_15_6_1)
 	if G.RequestClient == nil {
 		errStr := fmt.Sprint("RequestClient is nil")
 		logger.Logger.Debug(errStr)
@@ -91,12 +99,30 @@ func (G *Gpt35) getNewRequestClient(newType int) error {
 		errStr := fmt.Sprint("SetProxy Error: ", err)
 		logger.Logger.Debug(errStr)
 	}
-	// 设置 User-Agent
-	G.Ua = G.Proxy.Ua
-	// 设置语言
-	G.Language = G.Proxy.Language
 	// 成功后更新代理的可用时间
 	G.Proxy.CanUseAt = common.GetTimestampSecond(0)
+	return nil
+}
+
+func (G *Gpt35) getCookies() error {
+	var data = strings.NewReader(`{}`)
+	req, err := RequestClient.NewRequest("POST", "https://chat.openai.com/cdn-cgi/challenge-platform/h/b/jsd/r/"+common.RandomHexadecimalString(), data)
+	if err != nil {
+		return err
+	}
+	resp, err := G.RequestClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
+	if resp.StatusCode != 200 {
+		return errors.New("failed to get cookies")
+	}
+	for _, cookie := range resp.Cookies() {
+		G.Cookies = append(G.Cookies, cookie)
+	}
 	return nil
 }
 
@@ -118,8 +144,9 @@ func (G *Gpt35) getNewSession() error {
 	if response.StatusCode != 200 {
 		if response.StatusCode == 429 {
 			G.Proxy.CanUseAt = common.GetTimestampSecond(600)
+			logger.Logger.Debug(fmt.Sprint("getNewSession: Proxy restricted, Reuse at ", G.Proxy.CanUseAt))
 		}
-		logger.Logger.Debug(fmt.Sprint("StatusCode: ", response.StatusCode))
+		logger.Logger.Debug(fmt.Sprint("getNewSession: StatusCode: ", response.StatusCode))
 		return fmt.Errorf("StatusCode: %d", response.StatusCode)
 	}
 	defer func(Body io.ReadCloser) {
@@ -139,13 +166,14 @@ func (G *Gpt35) getNewSession() error {
 }
 
 func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, error) {
-	request, err := G.RequestClient.NewRequest(method, url, body)
+	request, err := RequestClient.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
 	request.Header.Set("origin", common.GetOrigin(BaseUrl))
 	request.Header.Set("referer", common.GetOrigin(BaseUrl))
 	request.Header.Set("accept", "*/*")
+	request.Header.Set("oai-language", "en-US")
 	request.Header.Set("cache-control", "no-cache")
 	request.Header.Set("content-type", "application/json")
 	request.Header.Set("pragma", "no-cache")
@@ -153,8 +181,11 @@ func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, 
 	request.Header.Set("sec-fetch-dest", "empty")
 	request.Header.Set("sec-fetch-mode", "cors")
 	request.Header.Set("sec-fetch-site", "same-origin")
-	request.Header.Set("oai-language", G.Language)
-	request.Header.Set("accept-language", G.Language)
+	request.Header.Set("Sec-Ch-Ua", `"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"`)
+	request.Header.Set("accept-language", "zh-CN,zh;q=0.9,zh-Hans;q=0.8,en;q=0.7")
 	request.Header.Set("User-Agent", G.Ua)
+	for _, cookie := range G.Cookies {
+		request.AddCookie(cookie)
+	}
 	return request, nil
 }

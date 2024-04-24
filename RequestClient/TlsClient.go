@@ -1,8 +1,6 @@
 package RequestClient
 
 import (
-	"fmt"
-	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
 	tlsClient "github.com/bogdanfinn/tls-client"
 	"github.com/bogdanfinn/tls-client/profiles"
@@ -49,7 +47,8 @@ func RandomClientProfile() profiles.ClientProfile {
 	randomIndex := rng.Intn(len(clientProfiles))
 	return clientProfiles[randomIndex]
 }
-func (T *TlsClient) NewRequest(method, url string, body io.Reader) (*fhttp.Request, error) {
+
+func NewRequest(method, url string, body io.Reader) (*fhttp.Request, error) {
 	request, err := fhttp.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -70,7 +69,6 @@ func (T *TlsClient) SetProxy(link string) error {
 	if link == "" {
 		return nil
 	}
-	logger.Logger.Debug(fmt.Sprint("SetProxy: ", link))
 	err := T.client.SetProxy(link)
 	if err != nil {
 		return err
