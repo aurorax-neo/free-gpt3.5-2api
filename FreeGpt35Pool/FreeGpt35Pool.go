@@ -1,4 +1,4 @@
-package Gpt35Pool
+package FreeGpt35Pool
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	instance *Gpt35Pool
+	instance *FreeGpt35Pool
 	once     sync.Once
 )
 
@@ -19,7 +19,7 @@ func init() {
 	instance = GetGpt35PoolInstance()
 }
 
-type Gpt35Pool struct {
+type FreeGpt35Pool struct {
 	data     []*FreeGpt35.Gpt35
 	head     int // 队头指针
 	tail     int // 队尾指针
@@ -27,24 +27,24 @@ type Gpt35Pool struct {
 	capacity int // 队列容量
 }
 
-func newGpt35Pool(capacity int) *Gpt35Pool {
-	return &Gpt35Pool{
+func newGpt35Pool(capacity int) *FreeGpt35Pool {
+	return &FreeGpt35Pool{
 		data:     make([]*FreeGpt35.Gpt35, capacity),
 		capacity: config.PoolMaxCount,
 	}
 }
 
-func GetGpt35PoolInstance() *Gpt35Pool {
+func GetGpt35PoolInstance() *FreeGpt35Pool {
 	once.Do(func() {
 		instance = newGpt35Pool(config.PoolMaxCount)
-		logger.Logger.Info(fmt.Sprint("PoolMaxCount: ", config.PoolMaxCount, ", AuthExpirationDate: ", config.AuthED, ", Init Gpt35Pool..."))
-		// 定时刷新 Gpt35Pool
+		logger.Logger.Info(fmt.Sprint("PoolMaxCount: ", config.PoolMaxCount, ", AuthExpirationDate: ", config.AuthED, ", Init FreeGpt35Pool..."))
+		// 定时刷新 FreeGpt35Pool
 		instance.updateGpt35Pool(time.Millisecond * 200)
 	})
 	return instance
 }
 
-func (G *Gpt35Pool) updateGpt35Pool(nanosecond time.Duration) {
+func (G *FreeGpt35Pool) updateGpt35Pool(nanosecond time.Duration) {
 	common.TimingTask(nanosecond, func() {
 		// 遍历队列中的所有元素
 		G.Traverse(func(index int, gpt35 *FreeGpt35.Gpt35) {
@@ -60,7 +60,7 @@ func (G *Gpt35Pool) updateGpt35Pool(nanosecond time.Duration) {
 	})
 }
 
-func (G *Gpt35Pool) isLiveGpt35(gpt35 *FreeGpt35.Gpt35) bool {
+func (G *FreeGpt35Pool) isLiveGpt35(gpt35 *FreeGpt35.Gpt35) bool {
 	//判断是否为空
 	if gpt35 == nil ||
 		gpt35.MaxUseCount <= 0 || //无可用次数
@@ -70,7 +70,7 @@ func (G *Gpt35Pool) isLiveGpt35(gpt35 *FreeGpt35.Gpt35) bool {
 	return true
 }
 
-func (G *Gpt35Pool) GetGpt35(retry int) *FreeGpt35.Gpt35 {
+func (G *FreeGpt35Pool) GetGpt35(retry int) *FreeGpt35.Gpt35 {
 	// 获取 FreeGpt35 实例
 	gpt35 := G.Front()
 	if G.isLiveGpt35(gpt35) { //有缓存
@@ -90,22 +90,22 @@ func (G *Gpt35Pool) GetGpt35(retry int) *FreeGpt35.Gpt35 {
 }
 
 // GetSize 获取队列当前元素个数
-func (G *Gpt35Pool) GetSize() int {
+func (G *FreeGpt35Pool) GetSize() int {
 	return G.size
 }
 
 // GetCapacity 获取队列容量
-func (G *Gpt35Pool) GetCapacity() int {
+func (G *FreeGpt35Pool) GetCapacity() int {
 	return G.capacity
 }
 
 // IsFull 检查队列是否已满
-func (G *Gpt35Pool) IsFull() bool {
+func (G *FreeGpt35Pool) IsFull() bool {
 	return G.size == G.capacity
 }
 
 // Enqueue 入队
-func (G *Gpt35Pool) Enqueue(v *FreeGpt35.Gpt35) bool {
+func (G *FreeGpt35Pool) Enqueue(v *FreeGpt35.Gpt35) bool {
 	if G.IsFull() || v == nil {
 		return false
 	}
@@ -116,12 +116,12 @@ func (G *Gpt35Pool) Enqueue(v *FreeGpt35.Gpt35) bool {
 }
 
 // IsEmpty 检查队列是否为空
-func (G *Gpt35Pool) IsEmpty() bool {
+func (G *FreeGpt35Pool) IsEmpty() bool {
 	return G.size == 0
 }
 
 // Dequeue 出队
-func (G *Gpt35Pool) Dequeue() *FreeGpt35.Gpt35 {
+func (G *FreeGpt35Pool) Dequeue() *FreeGpt35.Gpt35 {
 	// 判断是否为空
 	if G.IsEmpty() {
 		return nil
@@ -133,7 +133,7 @@ func (G *Gpt35Pool) Dequeue() *FreeGpt35.Gpt35 {
 }
 
 // Front 获取队首元素
-func (G *Gpt35Pool) Front() *FreeGpt35.Gpt35 {
+func (G *FreeGpt35Pool) Front() *FreeGpt35.Gpt35 {
 	if G.IsEmpty() {
 		return nil
 	}
@@ -141,7 +141,7 @@ func (G *Gpt35Pool) Front() *FreeGpt35.Gpt35 {
 }
 
 // Rear 获取队尾元素
-func (G *Gpt35Pool) Rear() *FreeGpt35.Gpt35 {
+func (G *FreeGpt35Pool) Rear() *FreeGpt35.Gpt35 {
 	if G.IsEmpty() {
 		return nil
 	}
@@ -151,7 +151,7 @@ func (G *Gpt35Pool) Rear() *FreeGpt35.Gpt35 {
 }
 
 // RemoveAt 移除指定位置的元素
-func (G *Gpt35Pool) RemoveAt(index int) (*FreeGpt35.Gpt35, bool) {
+func (G *FreeGpt35Pool) RemoveAt(index int) (*FreeGpt35.Gpt35, bool) {
 	if index < 0 || index >= G.size {
 		return nil, false
 	}
@@ -176,7 +176,7 @@ func (G *Gpt35Pool) RemoveAt(index int) (*FreeGpt35.Gpt35, bool) {
 }
 
 // Traverse 遍历队列中的所有元素，并对每个元素执行指定操作
-func (G *Gpt35Pool) Traverse(callback func(int, *FreeGpt35.Gpt35)) {
+func (G *FreeGpt35Pool) Traverse(callback func(int, *FreeGpt35.Gpt35)) {
 	if G.IsEmpty() {
 		return
 	}
