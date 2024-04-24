@@ -48,7 +48,7 @@ func Gpt35Completions(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	}
 	// 设置请求头
 	request.Header.Set("oai-device-id", ChatGpt35.Session.OaiDeviceId)
-	request.Header.Set("openai-sentinel-FreeGpt35-requirements-token", ChatGpt35.Session.Token)
+	request.Header.Set("openai-sentinel-chat-requirements-token", ChatGpt35.Session.Token)
 	if ChatGpt35.Session.ProofWork.Required {
 		request.Header.Set("Openai-Sentinel-Proof-Token", ChatGpt35.Session.ProofWork.Ospt)
 	}
@@ -107,7 +107,7 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Re
 			// created
 			apiRespObj.Created = time.Now().Unix()
 			// object
-			apiRespObj.Object = "FreeGpt35.completion.chunk"
+			apiRespObj.Object = "chat.completion.chunk"
 			// choices
 			delta := respmodel.StreamDeltaObj{
 				Content: "",
@@ -162,7 +162,7 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Re
 			// created
 			apiRespObj.Created = time.Now().Unix()
 			// object
-			apiRespObj.Object = "FreeGpt35.completion.chunk"
+			apiRespObj.Object = "chat.completion.chunk"
 			// choices
 			delta := respmodel.StreamDeltaObj{
 				Content: content,
@@ -214,7 +214,7 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.
 			// created
 			apiRespObj.Created = time.Now().Unix()
 			// object
-			apiRespObj.Object = "FreeGpt35.completion"
+			apiRespObj.Object = "chat.completion"
 			// model
 			apiRespObj.Model = apiReq.Model
 			// usage
