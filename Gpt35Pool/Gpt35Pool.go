@@ -72,12 +72,17 @@ func (G *Gpt35Pool) isLiveGpt35(gpt35 *chat.Gpt35) bool {
 
 func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 	// 获取 Gpt35 实例
-	gpt35 := G.Dequeue()
-	if gpt35 != nil { //有缓存
-		return gpt35
+	gpt35 := G.Front()
+	if G.isLiveGpt35(gpt35) { //有缓存
+		// 减少 Gpt35 实例的最大使用次数
+		gpt35.MaxUseCount--
+		// 判断 Gpt35 实例是否有效 无效则移除
+		if G.isLiveGpt35(gpt35) {
+			G.Dequeue()
+		}
+		// 深拷贝 Gpt35 实例
+		return common.DeepCopyStruct(gpt35).(*chat.Gpt35)
 	} else if retry > 0 {
-		// 递归获取 Gpt35 实例
-		time.Sleep(time.Millisecond * 200)
 		return G.GetGpt35(retry - 1)
 	}
 	// 缓存内无可用 Gpt35 实例，返回新 Gpt35 实例
@@ -121,25 +126,28 @@ func (G *Gpt35Pool) Dequeue() *chat.Gpt35 {
 	if G.IsEmpty() {
 		return nil
 	}
-	// 获取 Gpt35 实例
-	gpt35 := G.data[G.head]
-	// 判断是否为有效 Gpt35 实例
-	if G.isLiveGpt35(gpt35) {
-		// 可用次数减 1
-		gpt35.MaxUseCount--
-		// 返回深拷贝的 Gpt35 实例
-		return &chat.Gpt35{
-			RequestClient: gpt35.RequestClient,
-			MaxUseCount:   gpt35.MaxUseCount,
-			ExpiresIn:     gpt35.ExpiresIn,
-			Session:       gpt35.Session,
-			Ua:            gpt35.Ua,
-			Language:      gpt35.Language,
-		}
-	}
+	value := G.data[G.head]
 	G.head = (G.head + 1) % G.capacity
 	G.size--
-	return nil
+	return value
+}
+
+// Front 获取队首元素
+func (G *Gpt35Pool) Front() *chat.Gpt35 {
+	if G.IsEmpty() {
+		return nil
+	}
+	return G.data[G.head]
+}
+
+// Rear 获取队尾元素
+func (G *Gpt35Pool) Rear() *chat.Gpt35 {
+	if G.IsEmpty() {
+		return nil
+	}
+	// 需要计算tail的上一个位置
+	tailIndex := (G.tail - 1 + G.capacity) % G.capacity
+	return G.data[tailIndex]
 }
 
 // RemoveAt 移除指定位置的元素

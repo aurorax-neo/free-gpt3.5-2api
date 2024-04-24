@@ -3,12 +3,16 @@ package common
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	fhttp "github.com/bogdanfinn/fhttp"
+	"github.com/bogdanfinn/fhttp/httputil"
 	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
 	"math/rand"
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -80,10 +84,16 @@ func SplitAndAddBearer(authTokens string) []string {
 	return authTokenList
 }
 
-func RandomLanguage() string {
+func GetRand() rand.Rand {
 	// 初始化随机数生成器
 	seed := time.Now().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
+	return *rng
+}
+
+func RandomLanguage() string {
+	// 初始化随机数生成器
+	rng := GetRand()
 	// 语言列表
 	languages := []string{"af", "am", "ar-sa", "as", "az-Latn", "be", "bg", "bn-BD", "bn-IN", "bs", "ca", "ca-ES-valencia", "cs", "cy", "da", "de", "de-de", "el", "en-GB", "en-US", "es", "es-ES", "es-US", "es-MX", "et", "eu", "fa", "fi", "fil-Latn", "fr", "fr-FR", "fr-CA", "ga", "gd-Latn", "gl", "gu", "ha-Latn", "he", "hi", "hr", "hu", "hy", "id", "ig-Latn", "is", "it", "it-it", "ja", "ka", "kk", "km", "kn", "ko", "kok", "ku-Arab", "ky-Cyrl", "lb", "lt", "lv", "mi-Latn", "mk", "ml", "mn-Cyrl", "mr", "ms", "mt", "nb", "ne", "nl", "nl-BE", "nn", "nso", "or", "pa", "pa-Arab", "pl", "prs-Arab", "pt-BR", "pt-PT", "qut-Latn", "quz", "ro", "ru", "rw", "sd-Arab", "si", "sk", "sl", "sq", "sr-Cyrl-BA", "sr-Cyrl-RS", "sr-Latn-RS", "sv", "sw", "ta", "te", "tg-Cyrl", "th", "ti", "tk-Latn", "tn", "tr", "tt-Cyrl", "ug-Arab", "uk", "ur", "uz-Latn", "vi", "wo", "xh", "yo-Latn", "zh-Hans", "zh-Hant", "zu"}
 	// 随机选择一个语言
@@ -178,4 +188,71 @@ func TimingTask(nanosecond time.Duration, f func()) {
 			}
 		}
 	}()
+}
+
+// DeepCopyStruct 深拷贝函数
+func DeepCopyStruct(src interface{}) interface{} {
+	// 获取源对象的类型信息
+	srcType := reflect.TypeOf(src)
+	// 创建目标对象
+	dst := reflect.New(srcType).Elem()
+
+	// 深拷贝过程
+	deepCopyValue(reflect.ValueOf(src), dst)
+
+	return dst.Interface()
+}
+
+// 递归进行深拷贝
+func deepCopyValue(src, dst reflect.Value) {
+	switch src.Kind() {
+	case reflect.Ptr:
+		if src.IsNil() {
+			dst.Set(src)
+			return
+		}
+		// 递归处理指针指向的内容
+		newValue := reflect.New(src.Elem().Type())
+		deepCopyValue(src.Elem(), newValue.Elem())
+		dst.Set(newValue)
+	case reflect.Struct:
+		for i := 0; i < src.NumField(); i++ {
+			// 递归处理结构体的字段
+			deepCopyValue(src.Field(i), dst.Field(i))
+		}
+	default:
+		// 处理基本类型和数组、切片、映射等
+		dst.Set(src)
+	}
+}
+
+func RandomHexadecimalString() string {
+	rng := GetRand()
+	const charset = "0123456789abcdef"
+	const length = 16 // The length of the string you want to generate
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rng.Intn(len(charset))]
+	}
+	return string(b)
+}
+
+// OutRequest 打印请求.
+func OutRequest(req *fhttp.Request) {
+	dump, err := httputil.DumpRequestOut(req, true)
+	if err != nil {
+		fmt.Println("Error dumping request:", err)
+	} else {
+		fmt.Println(string(dump))
+	}
+}
+
+// OutResponse 打印响应.
+func OutResponse(res *fhttp.Response) {
+	dump, err := httputil.DumpResponse(res, true)
+	if err != nil {
+		fmt.Println("Error dumping response:", err)
+	} else {
+		fmt.Println(string(dump))
+	}
 }

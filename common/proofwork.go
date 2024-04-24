@@ -39,7 +39,6 @@ func getConfig(userAgent string) []interface{} {
 
 func CalcProofToken(seed string, diff string, userAgent string) string {
 	config := getConfig(userAgent)
-	diffLen := len(diff) / 2
 	hasher := sha3.New512()
 	for i := 0; i < numberCollisions; i++ {
 		config[3] = i
@@ -48,7 +47,7 @@ func CalcProofToken(seed string, diff string, userAgent string) string {
 		hasher.Write([]byte(seed + base))
 		hash := hasher.Sum(nil)
 		hasher.Reset()
-		if hex.EncodeToString(hash[:diffLen]) <= diff {
+		if hex.EncodeToString(hash[:len(diff)]) <= diff {
 			return "gAAAAAB" + base
 		}
 	}

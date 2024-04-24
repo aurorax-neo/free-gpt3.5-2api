@@ -9,7 +9,7 @@ curl --location --request GET 'http://127.0.0.1:9846/v1/tokens' \
 --header 'Authorization: Bearer abc'
 ```
 
-返回示例说明：`count`为授权池中可用授权数，如果` count` 为 `0`请检查`ip`是否支持 `openai`
+返回示例说明：`count`为授权池中可用授权数，如果`count` 为 `0`请检查`ip`是否支持 `openai`
 
 ```
 {
