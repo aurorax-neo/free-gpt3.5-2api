@@ -1,4 +1,4 @@
-package Gpt35
+package FreeGpt35
 
 import (
 	"encoding/json"
@@ -18,7 +18,7 @@ import (
 
 const BaseUrl = "https://chat.openai.com"
 const ApiUrl = BaseUrl + "/backend-anon/conversation"
-const SessionUrl = BaseUrl + "/backend-anon/sentinel/Gpt35-requirements"
+const SessionUrl = BaseUrl + "/backend-anon/sentinel/FreeGpt35-requirements"
 
 type Gpt35 struct {
 	RequestClient RequestClient.RequestClient
@@ -51,7 +51,7 @@ type turnstile struct {
 
 // NewGpt35 创建 Gpt35 实例 0 获取 1 刷新获取
 func NewGpt35(newType int) *Gpt35 {
-	// 创建 Gpt35 实例
+	// 创建 FreeGpt35 实例
 	gpt35 := &Gpt35{
 		MaxUseCount: -1,
 		ExpiresIn:   -1,

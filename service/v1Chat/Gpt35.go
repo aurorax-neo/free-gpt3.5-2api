@@ -3,6 +3,7 @@ package v1Chat
 import (
 	"encoding/json"
 	"fmt"
+	"free-gpt3.5-2api/FreeGpt35"
 	"free-gpt3.5-2api/Gpt35Pool"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/service/v1"
@@ -18,8 +19,8 @@ import (
 	"time"
 )
 
-func Gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
-	// 获取 Gpt35 实例
+func Gpt35Completions(c *gin.Context, apiReq *reqmodel.ApiReq) {
+	// 获取 FreeGpt35 实例
 	ChatGpt35 := Gpt35Pool.GetGpt35PoolInstance().GetGpt35(3)
 	if ChatGpt35 == nil {
 		errStr := "please restart the program、change the IP address、use a proxy to try again."
@@ -38,7 +39,7 @@ func Gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 
 	}
 	// 生成请求
-	request, err := ChatGpt35.NewRequest(fhttp.MethodPost, Gpt35.ApiUrl, body)
+	request, err := ChatGpt35.NewRequest(fhttp.MethodPost, FreeGpt35.ApiUrl, body)
 	if err != nil || request == nil {
 		errStr := "Request is nil or error"
 		logger.Logger.Error("Request is nil or error")
@@ -47,7 +48,7 @@ func Gpt35(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	}
 	// 设置请求头
 	request.Header.Set("oai-device-id", ChatGpt35.Session.OaiDeviceId)
-	request.Header.Set("openai-sentinel-Gpt35-requirements-token", ChatGpt35.Session.Token)
+	request.Header.Set("openai-sentinel-FreeGpt35-requirements-token", ChatGpt35.Session.Token)
 	if ChatGpt35.Session.ProofWork.Required {
 		request.Header.Set("Openai-Sentinel-Proof-Token", ChatGpt35.Session.ProofWork.Ospt)
 	}
@@ -106,7 +107,7 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Re
 			// created
 			apiRespObj.Created = time.Now().Unix()
 			// object
-			apiRespObj.Object = "Gpt35.completion.chunk"
+			apiRespObj.Object = "FreeGpt35.completion.chunk"
 			// choices
 			delta := respmodel.StreamDeltaObj{
 				Content: "",
@@ -161,7 +162,7 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Re
 			// created
 			apiRespObj.Created = time.Now().Unix()
 			// object
-			apiRespObj.Object = "Gpt35.completion.chunk"
+			apiRespObj.Object = "FreeGpt35.completion.chunk"
 			// choices
 			delta := respmodel.StreamDeltaObj{
 				Content: content,
@@ -213,7 +214,7 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.
 			// created
 			apiRespObj.Created = time.Now().Unix()
 			// object
-			apiRespObj.Object = "Gpt35.completion"
+			apiRespObj.Object = "FreeGpt35.completion"
 			// model
 			apiRespObj.Model = apiReq.Model
 			// usage
