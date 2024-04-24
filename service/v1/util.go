@@ -6,12 +6,12 @@ import (
 
 func MappingModel(model string) string {
 	var modelMapping = map[string]string{
-		"Gpt35-3.5-turbo":          "text-davinci-002-render-sha",
-		"Gpt35-3.5-turbo-16k":      "text-davinci-002-render-sha",
-		"Gpt35-3.5-turbo-16k-0613": "text-davinci-002-render-sha",
-		"Gpt35-3.5-turbo-0301":     "text-davinci-002-render-sha",
-		"Gpt35-3.5-turbo-0613":     "text-davinci-002-render-sha",
-		"Gpt35-3.5-turbo-1106":     "text-davinci-002-render-sha",
+		"FreeGpt35-3.5-turbo":          "text-davinci-002-render-sha",
+		"FreeGpt35-3.5-turbo-16k":      "text-davinci-002-render-sha",
+		"FreeGpt35-3.5-turbo-16k-0613": "text-davinci-002-render-sha",
+		"FreeGpt35-3.5-turbo-0301":     "text-davinci-002-render-sha",
+		"FreeGpt35-3.5-turbo-0613":     "text-davinci-002-render-sha",
+		"FreeGpt35-3.5-turbo-1106":     "text-davinci-002-render-sha",
 	}
 	if model == "" {
 		return "text-davinci-002-render-sha"

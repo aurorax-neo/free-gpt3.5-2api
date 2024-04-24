@@ -15,5 +15,5 @@ func Completions(c *gin.Context) {
 		common.ErrorResponse(c, http.StatusBadRequest, "Invalid parameter", nil)
 		return
 	}
-	Gpt35(c, apiReq)
+	Gpt35Completions(c, apiReq)
 }
