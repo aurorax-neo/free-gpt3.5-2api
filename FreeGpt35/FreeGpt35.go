@@ -18,7 +18,7 @@ import (
 
 const BaseUrl = "https://chat.openai.com"
 const ApiUrl = BaseUrl + "/backend-anon/conversation"
-const SessionUrl = BaseUrl + "/backend-anon/sentinel/FreeGpt35-requirements"
+const SessionUrl = BaseUrl + "/backend-anon/sentinel/chat-requirements"
 
 type Gpt35 struct {
 	RequestClient RequestClient.RequestClient
@@ -32,12 +32,12 @@ type Gpt35 struct {
 }
 
 type session struct {
-	OaiDeviceId string           `json:"-"`
-	Persona     string           `json:"persona"`
-	Arkose      arkose           `json:"arkose"`
-	Turnstile   turnstile        `json:"turnstile"`
-	ProofWork   common.ProofWork `json:"proofofwork"`
-	Token       string           `json:"token"`
+	OaiDeviceId string    `json:"-"`
+	Persona     string    `json:"persona"`
+	Arkose      arkose    `json:"arkose"`
+	Turnstile   turnstile `json:"turnstile"`
+	ProofWork   ProofWork `json:"proofofwork"`
+	Token       string    `json:"token"`
 }
 
 type arkose struct {
@@ -156,7 +156,7 @@ func (G *Gpt35) getNewSession() error {
 		return err
 	}
 	if G.Session.ProofWork.Required {
-		G.Session.ProofWork.Ospt = common.CalcProofToken(G.Session.ProofWork.Seed, G.Session.ProofWork.Difficulty, request.Header.Get("User-Agent"))
+		G.Session.ProofWork.Ospt = CalcProofToken(G.Session.ProofWork.Seed, G.Session.ProofWork.Difficulty, request.Header.Get("User-Agent"))
 	}
 	// 设置 MaxUseCount
 	G.MaxUseCount = 1

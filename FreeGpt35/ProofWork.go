@@ -1,4 +1,4 @@
-package common
+package FreeGpt35
 
 import (
 	"encoding/base64"
