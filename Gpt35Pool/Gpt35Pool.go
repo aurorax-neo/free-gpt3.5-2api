@@ -2,7 +2,7 @@ package Gpt35Pool
 
 import (
 	"fmt"
-	"free-gpt3.5-2api/chat"
+	"free-gpt3.5-2api/Gpt35"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
 	"github.com/aurorax-neo/go-logger"
@@ -20,7 +20,7 @@ func init() {
 }
 
 type Gpt35Pool struct {
-	data     []*chat.Gpt35
+	data     []*Gpt35.Gpt35
 	head     int // 队头指针
 	tail     int // 队尾指针
 	size     int // 队列当前元素个数
@@ -29,7 +29,7 @@ type Gpt35Pool struct {
 
 func newGpt35Pool(capacity int) *Gpt35Pool {
 	return &Gpt35Pool{
-		data:     make([]*chat.Gpt35, capacity),
+		data:     make([]*Gpt35.Gpt35, capacity),
 		capacity: config.PoolMaxCount,
 	}
 }
@@ -47,7 +47,7 @@ func GetGpt35PoolInstance() *Gpt35Pool {
 func (G *Gpt35Pool) updateGpt35Pool(nanosecond time.Duration) {
 	common.TimingTask(nanosecond, func() {
 		// 遍历队列中的所有元素
-		G.Traverse(func(index int, gpt35 *chat.Gpt35) {
+		G.Traverse(func(index int, gpt35 *Gpt35.Gpt35) {
 			// 判断是否为无效 Gpt35 实例
 			if !G.isLiveGpt35(gpt35) {
 				// 移除无效 Gpt35 实例
@@ -55,12 +55,12 @@ func (G *Gpt35Pool) updateGpt35Pool(nanosecond time.Duration) {
 			}
 		})
 		if !G.IsFull() {
-			G.Enqueue(chat.NewGpt35(1))
+			G.Enqueue(Gpt35.NewGpt35(1))
 		}
 	})
 }
 
-func (G *Gpt35Pool) isLiveGpt35(gpt35 *chat.Gpt35) bool {
+func (G *Gpt35Pool) isLiveGpt35(gpt35 *Gpt35.Gpt35) bool {
 	//判断是否为空
 	if gpt35 == nil ||
 		gpt35.MaxUseCount <= 0 || //无可用次数
@@ -70,7 +70,7 @@ func (G *Gpt35Pool) isLiveGpt35(gpt35 *chat.Gpt35) bool {
 	return true
 }
 
-func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
+func (G *Gpt35Pool) GetGpt35(retry int) *Gpt35.Gpt35 {
 	// 获取 Gpt35 实例
 	gpt35 := G.Front()
 	if G.isLiveGpt35(gpt35) { //有缓存
@@ -81,12 +81,12 @@ func (G *Gpt35Pool) GetGpt35(retry int) *chat.Gpt35 {
 			G.Dequeue()
 		}
 		// 深拷贝 Gpt35 实例
-		return common.DeepCopyStruct(gpt35).(*chat.Gpt35)
+		return common.DeepCopyStruct(gpt35).(*Gpt35.Gpt35)
 	} else if retry > 0 {
 		return G.GetGpt35(retry - 1)
 	}
 	// 缓存内无可用 Gpt35 实例，返回新 Gpt35 实例
-	return chat.NewGpt35(0)
+	return Gpt35.NewGpt35(0)
 }
 
 // GetSize 获取队列当前元素个数
@@ -105,7 +105,7 @@ func (G *Gpt35Pool) IsFull() bool {
 }
 
 // Enqueue 入队
-func (G *Gpt35Pool) Enqueue(v *chat.Gpt35) bool {
+func (G *Gpt35Pool) Enqueue(v *Gpt35.Gpt35) bool {
 	if G.IsFull() || v == nil {
 		return false
 	}
@@ -121,7 +121,7 @@ func (G *Gpt35Pool) IsEmpty() bool {
 }
 
 // Dequeue 出队
-func (G *Gpt35Pool) Dequeue() *chat.Gpt35 {
+func (G *Gpt35Pool) Dequeue() *Gpt35.Gpt35 {
 	// 判断是否为空
 	if G.IsEmpty() {
 		return nil
@@ -133,7 +133,7 @@ func (G *Gpt35Pool) Dequeue() *chat.Gpt35 {
 }
 
 // Front 获取队首元素
-func (G *Gpt35Pool) Front() *chat.Gpt35 {
+func (G *Gpt35Pool) Front() *Gpt35.Gpt35 {
 	if G.IsEmpty() {
 		return nil
 	}
@@ -141,7 +141,7 @@ func (G *Gpt35Pool) Front() *chat.Gpt35 {
 }
 
 // Rear 获取队尾元素
-func (G *Gpt35Pool) Rear() *chat.Gpt35 {
+func (G *Gpt35Pool) Rear() *Gpt35.Gpt35 {
 	if G.IsEmpty() {
 		return nil
 	}
@@ -151,7 +151,7 @@ func (G *Gpt35Pool) Rear() *chat.Gpt35 {
 }
 
 // RemoveAt 移除指定位置的元素
-func (G *Gpt35Pool) RemoveAt(index int) (*chat.Gpt35, bool) {
+func (G *Gpt35Pool) RemoveAt(index int) (*Gpt35.Gpt35, bool) {
 	if index < 0 || index >= G.size {
 		return nil, false
 	}
@@ -176,7 +176,7 @@ func (G *Gpt35Pool) RemoveAt(index int) (*chat.Gpt35, bool) {
 }
 
 // Traverse 遍历队列中的所有元素，并对每个元素执行指定操作
-func (G *Gpt35Pool) Traverse(callback func(int, *chat.Gpt35)) {
+func (G *Gpt35Pool) Traverse(callback func(int, *Gpt35.Gpt35)) {
 	if G.IsEmpty() {
 		return
 	}

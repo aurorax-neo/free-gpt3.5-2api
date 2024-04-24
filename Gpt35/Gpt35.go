@@ -1,4 +1,4 @@
-package chat
+package Gpt35
 
 import (
 	"encoding/json"
@@ -18,7 +18,7 @@ import (
 
 const BaseUrl = "https://chat.openai.com"
 const ApiUrl = BaseUrl + "/backend-anon/conversation"
-const SessionUrl = BaseUrl + "/backend-anon/sentinel/chat-requirements"
+const SessionUrl = BaseUrl + "/backend-anon/sentinel/Gpt35-requirements"
 
 type Gpt35 struct {
 	RequestClient RequestClient.RequestClient
