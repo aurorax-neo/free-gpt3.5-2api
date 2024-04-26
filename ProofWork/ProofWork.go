@@ -1,4 +1,4 @@
-package FreeGpt35
+package ProofWork
 
 import (
 	"encoding/base64"

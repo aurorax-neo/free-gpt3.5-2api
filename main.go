@@ -2,13 +2,22 @@ package main
 
 import (
 	"fmt"
+	"free-gpt3.5-2api/FreeGpt35Pool"
+	"free-gpt3.5-2api/ProxyPool"
 	"free-gpt3.5-2api/config"
 	"free-gpt3.5-2api/router"
 	"github.com/aurorax-neo/go-logger"
 	"github.com/gin-gonic/gin"
 )
 
+func Init() {
+	ProxyPool.GetProxyPoolInstance()
+	FreeGpt35Pool.GetGpt35PoolInstance()
+}
+
 func main() {
+	// Init
+	Init()
 	// Initialize HTTP server
 	gin.SetMode(gin.ReleaseMode)
 	server := gin.New()

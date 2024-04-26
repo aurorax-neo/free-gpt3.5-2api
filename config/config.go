@@ -13,6 +13,7 @@ var (
 	Port           string
 	Proxy          []string
 	AUTHORIZATIONS []string
+	BaseUrl        string
 	PoolMaxCount   int
 	AuthED         int
 )
@@ -41,6 +42,13 @@ func init() {
 	} else {
 		//以,分割 AUTH_TOKEN 并且为每个AUTH_TOKEN前面加上Bearer
 		AUTHORIZATIONS = common.SplitAndAddBearer(authorizations)
+	}
+	// BASE_URL
+	BaseUrl = os.Getenv("BASE_URL")
+	if BaseUrl == "" {
+		BaseUrl = "https://chat.openai.com"
+	} else {
+		BaseUrl = strings.TrimRight(BaseUrl, "/")
 	}
 	// POOL_MAX_COUNT
 	poolMaxCount := os.Getenv("POOL_MAX_COUNT")
