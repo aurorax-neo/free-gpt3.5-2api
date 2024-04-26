@@ -39,7 +39,7 @@ func Gpt35Completions(c *gin.Context, apiReq *reqmodel.ApiReq) {
 
 	}
 	// 生成请求
-	request, err := ChatGpt35.NewRequest(fhttp.MethodPost, FreeGpt35.ApiUrl, body)
+	request, err := ChatGpt35.NewRequest(fhttp.MethodPost, FreeGpt35.ChatUrl, body)
 	if err != nil || request == nil {
 		errStr := "Request is nil or error"
 		logger.Logger.Error("Request is nil or error")
@@ -47,10 +47,10 @@ func Gpt35Completions(c *gin.Context, apiReq *reqmodel.ApiReq) {
 		return
 	}
 	// 设置请求头
-	request.Header.Set("oai-device-id", ChatGpt35.Session.OaiDeviceId)
-	request.Header.Set("openai-sentinel-chat-requirements-token", ChatGpt35.Session.Token)
-	if ChatGpt35.Session.ProofWork.Required {
-		request.Header.Set("Openai-Sentinel-Proof-Token", ChatGpt35.Session.ProofWork.Ospt)
+	request.Header.Set("oai-device-id", ChatGpt35.FreeAuth.OaiDeviceId)
+	request.Header.Set("openai-sentinel-chat-requirements-token", ChatGpt35.FreeAuth.Token)
+	if ChatGpt35.FreeAuth.ProofWork.Required {
+		request.Header.Set("Openai-Sentinel-Proof-Token", ChatGpt35.FreeAuth.ProofWork.Ospt)
 	}
 	// 发送请求
 	response, err := ChatGpt35.RequestClient.Do(request)

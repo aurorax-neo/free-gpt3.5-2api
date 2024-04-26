@@ -173,8 +173,8 @@ func fileIsExistAndCreat(filePath string, content string) bool {
 	return true
 }
 
-// TimingTask 定时任务 参数含函数
-func TimingTask(nanosecond time.Duration, f func()) {
+// AsyncTimingTask 定时任务 参数含函数
+func AsyncTimingTask(nanosecond time.Duration, fun func()) {
 	go func() {
 		timerChan := time.After(nanosecond)
 		// 使用for循环阻塞等待定时器的信号
@@ -182,10 +182,21 @@ func TimingTask(nanosecond time.Duration, f func()) {
 			// 通过select语句监听定时器通道和其他事件
 			select {
 			case <-timerChan:
-				f()
+				fun()
 				// 重新设置定时器，以便下一次执行
 				timerChan = time.After(nanosecond)
 			}
+			time.Sleep(time.Millisecond * 100)
+		}
+	}()
+}
+
+// AsyncLoopTask AsyncTimingTask 定时任务 参数含函数
+func AsyncLoopTask(sleep time.Duration, fun func()) {
+	go func() {
+		for {
+			fun()
+			time.Sleep(sleep)
 		}
 	}()
 }

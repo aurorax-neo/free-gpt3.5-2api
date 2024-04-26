@@ -15,10 +15,6 @@ var (
 	once     sync.Once
 )
 
-func init() {
-	instance = GetGpt35PoolInstance()
-}
-
 type FreeGpt35Pool struct {
 	data     []*FreeGpt35.Gpt35
 	head     int // 队头指针
@@ -31,21 +27,40 @@ func newGpt35Pool(capacity int) *FreeGpt35Pool {
 	return &FreeGpt35Pool{
 		data:     make([]*FreeGpt35.Gpt35, capacity),
 		capacity: config.PoolMaxCount,
+		size:     0,
+		head:     0,
+		tail:     0,
 	}
 }
 
 func GetGpt35PoolInstance() *FreeGpt35Pool {
 	once.Do(func() {
-		instance = newGpt35Pool(config.PoolMaxCount)
 		logger.Logger.Info(fmt.Sprint("PoolMaxCount: ", config.PoolMaxCount, ", AuthExpirationDate: ", config.AuthED, ", Init FreeGpt35Pool..."))
+		// 初始化 FreeGpt35Pool
+		instance = newGpt35Pool(config.PoolMaxCount)
 		// 定时刷新 FreeGpt35Pool
-		instance.updateGpt35Pool(time.Millisecond * 200)
+		instance.updateGpt35Pool(time.Millisecond * 256)
 	})
 	return instance
 }
 
-func (G *FreeGpt35Pool) updateGpt35Pool(nanosecond time.Duration) {
-	common.TimingTask(nanosecond, func() {
+func (G *FreeGpt35Pool) updateGpt35Pool(sleep time.Duration) {
+	// 检测 FreeGpt35Pool 是否已满
+	common.AsyncLoopTask(sleep, func() {
+		// 判断 FreeGpt35Pool 是否已满
+		if G.IsFull() {
+			return
+		}
+		// 获取新 FreeGpt35 实例
+		gpt35 := FreeGpt35.NewGpt35(1)
+		// 判断 FreeGpt35 实例是否有效
+		if G.isLiveGpt35(gpt35) {
+			// 入队新 FreeGpt35 实例
+			G.Enqueue(gpt35)
+		}
+	})
+	// 检测并移除无效 FreeGpt35 实例
+	common.AsyncLoopTask(sleep, func() {
 		// 遍历队列中的所有元素
 		G.Traverse(func(index int, gpt35 *FreeGpt35.Gpt35) {
 			// 判断是否为无效 FreeGpt35 实例
@@ -54,9 +69,6 @@ func (G *FreeGpt35Pool) updateGpt35Pool(nanosecond time.Duration) {
 				G.RemoveAt(index)
 			}
 		})
-		if !G.IsFull() {
-			G.Enqueue(FreeGpt35.NewGpt35(1))
-		}
 	})
 }
 

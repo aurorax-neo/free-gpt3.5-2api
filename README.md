@@ -56,8 +56,9 @@ LOG_LEVEL=info    # debug, info, warn, error
 LOG_PATH=         # 日志文件路径，默认为空（不生成日志文件）
 BIND=0.0.0.0      # 127.0.0.1
 PORT=3040
-PROXY=            # http://127.0.0.1:7890,http://127.0.0.1:7890 已支持多个代理（使用英文 "," 分隔）
-AUTHORIZATIONS=   # abc,bac (英文 , 分隔)
+PROXY=            # http://127.0.0.1:7890,http://127.0.0.1:7890 已支持多个代理（英文 "," 分隔）
+AUTHORIZATIONS=   # abc,bac (英文 "," 分隔)
+BASE_URL=         # 默认：https://chat.openai.com
 POOL_MAX_COUNT=64 # max number of connections to keep in the pool 默认：64
 AUTH_ED=600       # expiration time for the authorization in seconds 默认：600
 ```
