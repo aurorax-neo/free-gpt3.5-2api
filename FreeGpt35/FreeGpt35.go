@@ -141,8 +141,8 @@ func (G *Gpt35) getNewFreeAuth() error {
 		return err
 	}
 	if response.StatusCode != 200 {
-		if response.StatusCode == 429 {
-			G.Proxy.CanUseAt = common.GetTimestampSecond(600)
+		if response.StatusCode == 429 || response.StatusCode == 403 {
+			G.Proxy.CanUseAt = common.GetTimestampSecond(300)
 			logger.Logger.Debug(fmt.Sprint("getNewFreeAuth: Proxy restricted, Reuse at ", G.Proxy.CanUseAt))
 		}
 		logger.Logger.Debug(fmt.Sprint("getNewFreeAuth: StatusCode: ", response.StatusCode))
