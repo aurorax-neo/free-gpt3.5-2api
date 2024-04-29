@@ -76,7 +76,7 @@ func (G *FreeGpt35Pool) isLiveGpt35(gpt35 *FreeGpt35.Gpt35) bool {
 	//判断是否为空
 	if gpt35 == nil ||
 		gpt35.MaxUseCount <= 0 || //无可用次数
-		gpt35.ExpiresIn <= common.GetTimestampSecond(0) {
+		gpt35.ExpiresAt <= common.GetTimestampSecond(0) {
 		return false
 	}
 	return true
