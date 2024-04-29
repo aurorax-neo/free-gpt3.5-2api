@@ -10,6 +10,7 @@ import (
 	"free-gpt3.5-2api/config"
 	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
+	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/google/uuid"
 	"io"
 )
@@ -111,7 +112,7 @@ func (G *Gpt35) getNewProxy(newType int) error {
 
 func (G *Gpt35) getNewRequestClient() error {
 	// 请求客户端
-	G.RequestClient = RequestClient.GetInstance()
+	G.RequestClient = RequestClient.NewTlsClient(300, profiles.Okhttp4Android13)
 	if G.RequestClient == nil {
 		errStr := fmt.Sprint("RequestClient is nil")
 		logger.Logger.Debug(errStr)
@@ -127,6 +128,10 @@ func (G *Gpt35) getNewRequestClient() error {
 }
 
 func (G *Gpt35) getNewFreeAuth(newType int, maxUseCount int, expiresAt int64) error {
+	// Ua
+	G.Ua = G.Proxy.Ua
+	// Cookies
+	G.Cookies = G.Proxy.Cookies
 	// 生成新的设备 ID
 	G.FreeAuth.OaiDeviceId = uuid.New().String()
 	// 创建请求
@@ -163,10 +168,6 @@ func (G *Gpt35) getNewFreeAuth(newType int, maxUseCount int, expiresAt int64) er
 	if G.FreeAuth.ProofWork.Required {
 		G.FreeAuth.ProofWork.Ospt = ProofWork2.CalcProofToken(G.FreeAuth.ProofWork.Seed, G.FreeAuth.ProofWork.Difficulty, request.Header.Get("User-Agent"))
 	}
-	// Ua
-	G.Ua = G.Proxy.Ua
-	// Cookies
-	G.Cookies = G.Proxy.Cookies
 	// 设置 MaxUseCount
 	G.MaxUseCount = maxUseCount
 	// 设置 ExpiresAt
