@@ -120,8 +120,6 @@ func (G *Gpt35) getNewRequestClient(newType int) error {
 		errStr := fmt.Sprint("SetProxy Error: ", err)
 		logger.Logger.Debug(errStr)
 	}
-	// 成功后更新代理的可用时间
-	G.Proxy.CanUseAt = common.GetTimestampSecond(0)
 	return nil
 }
 
@@ -143,10 +141,14 @@ func (G *Gpt35) getNewFreeAuth(newType int, maxUseCount int, expiresIn int64) er
 	if response.StatusCode != 200 {
 		if (response.StatusCode == 429 || response.StatusCode == 403) && newType == 1 {
 			G.Proxy.CanUseAt = common.GetTimestampSecond(300)
-			logger.Logger.Debug(fmt.Sprint("getNewFreeAuth: Proxy restricted, Reuse at ", G.Proxy.CanUseAt))
+			logger.Logger.Debug(fmt.Sprint("getNewFreeAuth: Proxy(", G.Proxy.Link, ")restricted, Reuse at ", G.Proxy.CanUseAt))
 		}
 		logger.Logger.Debug(fmt.Sprint("getNewFreeAuth: StatusCode: ", response.StatusCode))
 		return fmt.Errorf("StatusCode: %d", response.StatusCode)
+	} else if newType == 0 {
+		// 成功后更新代理的可用时间
+		G.Proxy.CanUseAt = common.GetTimestampSecond(0)
+		logger.Logger.Debug(fmt.Sprint("getNewFreeAuth: Proxy(", G.Proxy.Link, ")Reuse at ", G.Proxy.CanUseAt))
 	}
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
