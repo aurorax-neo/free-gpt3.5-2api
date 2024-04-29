@@ -26,7 +26,7 @@ type FreeGpt35Pool struct {
 func newGpt35Pool(capacity int) *FreeGpt35Pool {
 	return &FreeGpt35Pool{
 		data:     make([]*FreeGpt35.Gpt35, capacity),
-		capacity: config.PoolMaxCount,
+		capacity: capacity,
 		size:     0,
 		head:     0,
 		tail:     0,
@@ -54,7 +54,7 @@ func (G *FreeGpt35Pool) updateGpt35Pool(sleep time.Duration) {
 		// 获取新 FreeGpt35 实例
 		gpt35 := FreeGpt35.NewGpt35(1)
 		// 判断 FreeGpt35 实例是否有效
-		if !G.isLiveGpt35(gpt35) {
+		if G.isLiveGpt35(gpt35) {
 			// 入队新 FreeGpt35 实例
 			G.Enqueue(gpt35)
 		}

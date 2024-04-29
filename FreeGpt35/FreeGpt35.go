@@ -63,7 +63,7 @@ func NewGpt35(newType int) *Gpt35 {
 		return nil
 	}
 	// 获取新session
-	err = gpt35.getNewFreeAuth()
+	err = gpt35.getNewFreeAuth(newType, 1, common.GetTimestampSecond(config.AuthED))
 	if err != nil {
 		return nil
 	}
@@ -125,7 +125,7 @@ func (G *Gpt35) getNewRequestClient(newType int) error {
 	return nil
 }
 
-func (G *Gpt35) getNewFreeAuth() error {
+func (G *Gpt35) getNewFreeAuth(newType int, maxUseCount int, expiresIn int64) error {
 	// 生成新的设备 ID
 	G.FreeAuth.OaiDeviceId = uuid.New().String()
 	// 创建请求
@@ -141,7 +141,7 @@ func (G *Gpt35) getNewFreeAuth() error {
 		return err
 	}
 	if response.StatusCode != 200 {
-		if response.StatusCode == 429 || response.StatusCode == 403 {
+		if (response.StatusCode == 429 || response.StatusCode == 403) && newType == 1 {
 			G.Proxy.CanUseAt = common.GetTimestampSecond(300)
 			logger.Logger.Debug(fmt.Sprint("getNewFreeAuth: Proxy restricted, Reuse at ", G.Proxy.CanUseAt))
 		}
@@ -158,8 +158,8 @@ func (G *Gpt35) getNewFreeAuth() error {
 		G.FreeAuth.ProofWork.Ospt = ProofWork2.CalcProofToken(G.FreeAuth.ProofWork.Seed, G.FreeAuth.ProofWork.Difficulty, request.Header.Get("User-Agent"))
 	}
 	// 设置 MaxUseCount
-	G.MaxUseCount = 1
+	G.MaxUseCount = maxUseCount
 	// 设置 ExpiresIn
-	G.ExpiresIn = common.GetTimestampSecond(config.AuthED)
+	G.ExpiresIn = expiresIn
 	return nil
 }
