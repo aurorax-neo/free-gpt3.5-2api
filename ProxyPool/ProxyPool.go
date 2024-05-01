@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/url"
 	"sync"
+	"time"
 )
 
 var (
@@ -37,32 +38,40 @@ type Proxy struct {
 func GetProxyPoolInstance() *ProxyPool {
 	Once.Do(func() {
 		logger.Logger.Info(fmt.Sprint("Init ProxyPool..."))
+		// 初始化 ProxyPool
 		Instance = NewProxyPool(nil)
+		// 遍历配置文件中的代理 添加到代理池
 		for _, px := range config.Proxy {
-			cookies, _ := getCookies(px, Ua)
-			Instance.AddProxy(&Proxy{
+			proxy := &Proxy{
 				Link:     common.ParseUrl(px),
 				CanUseAt: common.GetTimestampSecond(0),
 				Ua:       Ua,
-				Cookies:  cookies,
-			})
-
+			}
+			_ = proxy.getCookies()
+			Instance.AddProxy(proxy)
 		}
 		logger.Logger.Info(fmt.Sprint("Init ProxyPool Success"))
+		//定时刷新代理cookies
+		common.AsyncLoopTask(30*time.Minute, func() {
+			for _, proxy := range Instance.Proxies {
+				_ = proxy.getCookies()
+			}
+
+		})
 	})
 	return Instance
 }
 
 func NewProxyPool(proxies []*Proxy) *ProxyPool {
-	cookies, _ := getCookies("", Ua)
+	proxy := &Proxy{
+		Link:     &url.URL{},
+		CanUseAt: common.GetTimestampSecond(0),
+		Ua:       Ua,
+	}
+	_ = proxy.getCookies()
 	return &ProxyPool{
 		Proxies: append([]*Proxy{
-			{
-				Link:     &url.URL{},
-				CanUseAt: common.GetTimestampSecond(0),
-				Ua:       Ua,
-				Cookies:  cookies,
-			},
+			proxy,
 		}, proxies...),
 		Index: 0,
 	}
@@ -82,28 +91,28 @@ func (PP *ProxyPool) AddProxy(proxy *Proxy) {
 	PP.Proxies = append(PP.Proxies, proxy)
 }
 
-func getCookies(proxy string, ua string) ([]*fhttp.Cookie, error) {
+func (P *Proxy) getCookies() error {
 	// 获取cookies
 	request, err := RequestClient.NewRequest("GET", "https://chat.openai.com", nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// 设置请求头
-	request.Header.Set("User-Agent", ua)
+	request.Header.Set("User-Agent", P.Ua)
 	// 获取请求客户端
 	client := RequestClient.NewTlsClient(60, profiles.Okhttp4Android13)
 	// 设置代理
-	_ = client.SetProxy(proxy)
+	_ = client.SetProxy(P.Link.String())
 	// 发送 GET 请求
 	response, err := client.Do(request)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(response.Body)
 	if response.StatusCode != 200 {
-		return nil, fmt.Errorf("StatusCode: %d", response.StatusCode)
+		return fmt.Errorf("StatusCode: %d", response.StatusCode)
 	}
 	// 获取cookies
 	cookies := response.Cookies()
@@ -115,5 +124,7 @@ func getCookies(proxy string, ua string) ([]*fhttp.Cookie, error) {
 			cookie.Value = "https://chat.openai.com"
 		}
 	}
-	return cookies, nil
+	// 设置cookies
+	P.Cookies = cookies
+	return nil
 }
