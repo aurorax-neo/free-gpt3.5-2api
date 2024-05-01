@@ -3,7 +3,6 @@ module free-gpt3.5-2api
 go 1.21
 
 require (
-	github.com/EDDYCJY/fake-useragent v0.2.0
 	github.com/aurorax-neo/go-logger v0.0.0-20240421094709-1eb4bda786d5
 	github.com/bogdanfinn/fhttp v0.5.28
 	github.com/bogdanfinn/tls-client v1.7.2
@@ -16,9 +15,7 @@ require (
 )
 
 require (
-	github.com/PuerkitoBio/goquery v1.9.1 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
-	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/bogdanfinn/utls v1.6.1 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
