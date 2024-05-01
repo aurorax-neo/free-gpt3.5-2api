@@ -10,7 +10,6 @@ import (
 	"free-gpt3.5-2api/config"
 	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
-	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/google/uuid"
 	"io"
 )
@@ -118,7 +117,7 @@ func (G *Gpt35) getNewProxy(newType int) error {
 
 func (G *Gpt35) getNewRequestClient() error {
 	// 请求客户端
-	G.RequestClient = RequestClient.NewTlsClient(300, profiles.Okhttp4Android13)
+	G.RequestClient = RequestClient.NewTlsClient(300, ProxyPool.ClientProfile)
 	if G.RequestClient == nil {
 		errStr := fmt.Sprint("RequestClient is nil")
 		logger.Logger.Debug(errStr)
