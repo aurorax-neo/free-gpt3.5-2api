@@ -71,10 +71,8 @@ func NewProxyPool(proxies []*Proxy) *ProxyPool {
 	}
 	_ = proxy.getCookies()
 	return &ProxyPool{
-		Proxies: append([]*Proxy{
-			proxy,
-		}, proxies...),
-		Index: 0,
+		Proxies: append([]*Proxy{proxy}, proxies...),
+		Index:   0,
 	}
 }
 
