@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	ChatUrl = config.BaseUrl + "/backend-anon/conversation"
-	AuthUrl = config.BaseUrl + "/backend-anon/sentinel/chat-requirements"
+	BaseUrl = config.BaseUrl
+	ChatUrl = BaseUrl + "/backend-anon/conversation"
+	AuthUrl = BaseUrl + "/backend-anon/sentinel/chat-requirements"
 )
 
 type Gpt35 struct {
@@ -59,16 +60,19 @@ func NewGpt35(newType int) *Gpt35 {
 	// 获取代理
 	err := gpt35.getNewProxy(newType)
 	if err != nil {
+		logger.Logger.Debug(err.Error())
 		return nil
 	}
 	// 获取请求客户端
 	err = gpt35.getNewRequestClient()
 	if err != nil {
+		logger.Logger.Debug(err.Error())
 		return nil
 	}
 	// 获取新session
 	err = gpt35.getNewFreeAuth(newType, 1, common.GetTimestampSecond(config.AuthED))
 	if err != nil {
+		logger.Logger.Debug(err.Error())
 		return nil
 	}
 	return gpt35
@@ -102,6 +106,8 @@ func (G *Gpt35) getNewProxy(newType int) error {
 	ProxyPoolInstance := ProxyPool.GetProxyPoolInstance()
 	// 获取代理
 	G.Proxy = ProxyPoolInstance.GetProxy()
+	// 获取cookies
+	G.Cookies = G.Proxy.Cookies
 	// 判断代理是否可用
 	if G.Proxy.CanUseAt > common.GetTimestampSecond(0) && newType == 1 {
 		errStr := fmt.Sprint(G.Proxy.Link, ": Proxy restricted, Reuse at ", G.Proxy.CanUseAt)
@@ -140,6 +146,7 @@ func (G *Gpt35) getNewFreeAuth(newType int, maxUseCount int, expiresAt int64) er
 		return err
 	}
 	// 设置请求头
+	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("oai-device-id", G.FreeAuth.OaiDeviceId)
 	// 发送 POST 请求
 	response, err := G.RequestClient.Do(request)

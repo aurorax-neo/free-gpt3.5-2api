@@ -2,10 +2,13 @@ package ProxyPool
 
 import (
 	"fmt"
+	"free-gpt3.5-2api/RequestClient"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
 	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
+	"github.com/bogdanfinn/tls-client/profiles"
+	"io"
 	"net/url"
 	"sync"
 )
@@ -36,7 +39,7 @@ func GetProxyPoolInstance() *ProxyPool {
 		logger.Logger.Info(fmt.Sprint("Init ProxyPool..."))
 		Instance = NewProxyPool(nil)
 		for _, px := range config.Proxy {
-			cookies, _ := getCookies(px)
+			cookies, _ := getCookies(px, Ua)
 			Instance.AddProxy(&Proxy{
 				Link:     common.ParseUrl(px),
 				CanUseAt: common.GetTimestampSecond(0),
@@ -51,7 +54,7 @@ func GetProxyPoolInstance() *ProxyPool {
 }
 
 func NewProxyPool(proxies []*Proxy) *ProxyPool {
-	cookies, _ := getCookies("")
+	cookies, _ := getCookies("", Ua)
 	return &ProxyPool{
 		Proxies: append([]*Proxy{
 			{
@@ -79,7 +82,38 @@ func (PP *ProxyPool) AddProxy(proxy *Proxy) {
 	PP.Proxies = append(PP.Proxies, proxy)
 }
 
-func getCookies(proxy string) ([]*fhttp.Cookie, error) {
-	_ = proxy
-	return nil, nil
+func getCookies(proxy string, ua string) ([]*fhttp.Cookie, error) {
+	// 获取cookies
+	request, err := RequestClient.NewRequest("GET", "https://chat.openai.com", nil)
+	if err != nil {
+		return nil, err
+	}
+	// 设置请求头
+	request.Header.Set("User-Agent", ua)
+	// 获取请求客户端
+	client := RequestClient.NewTlsClient(60, profiles.Okhttp4Android13)
+	// 设置代理
+	_ = client.SetProxy(proxy)
+	// 发送 GET 请求
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(response.Body)
+	if response.StatusCode != 200 {
+		return nil, fmt.Errorf("StatusCode: %d", response.StatusCode)
+	}
+	// 获取cookies
+	cookies := response.Cookies()
+	for i, cookie := range cookies {
+		if cookie.Name == "oai-did" {
+			cookies = append(cookies[:i], cookies[i+1:]...)
+		}
+		if cookie.Name == "__Secure-next-auth.callback-url" {
+			cookie.Value = "https://chat.openai.com"
+		}
+	}
+	return cookies, nil
 }
