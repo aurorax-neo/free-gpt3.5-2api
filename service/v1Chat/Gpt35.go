@@ -47,6 +47,7 @@ func Gpt35Completions(c *gin.Context, apiReq *reqmodel.ApiReq) {
 		return
 	}
 	// 设置请求头
+	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("oai-device-id", ChatGpt35.FreeAuth.OaiDeviceId)
 	request.Header.Set("openai-sentinel-chat-requirements-token", ChatGpt35.FreeAuth.Token)
 	if ChatGpt35.FreeAuth.ProofWork.Required {

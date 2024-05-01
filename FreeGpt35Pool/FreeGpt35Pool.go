@@ -86,15 +86,17 @@ func (G *FreeGpt35Pool) GetGpt35(retry int) *FreeGpt35.Gpt35 {
 	// 获取 FreeGpt35 实例
 	gpt35 := G.Front()
 	if G.isLiveGpt35(gpt35) { //有缓存
+		// 深拷贝
+		gpt35_ := common.DeepCopyStruct(gpt35).(*FreeGpt35.Gpt35)
 		// 减少 FreeGpt35 实例的最大使用次数
 		gpt35.MaxUseCount--
 		// 判断 FreeGpt35 实例是否有效 无效则移除
-		if G.isLiveGpt35(gpt35) {
+		if !G.isLiveGpt35(gpt35) {
 			G.Dequeue()
 		}
-		// 深拷贝 FreeGpt35 实例
-		return common.DeepCopyStruct(gpt35).(*FreeGpt35.Gpt35)
+		return gpt35_
 	} else if retry > 0 {
+		time.Sleep(time.Millisecond * 128)
 		return G.GetGpt35(retry - 1)
 	}
 	// 缓存内无可用 FreeGpt35 实例，返回新 FreeGpt35 实例
