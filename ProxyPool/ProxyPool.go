@@ -15,7 +15,8 @@ import (
 )
 
 var (
-	Ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+	ClientProfile = profiles.Safari_15_6_1
+	Ua            = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 )
 
 var (
@@ -52,7 +53,7 @@ func GetProxyPoolInstance() *ProxyPool {
 		}
 		logger.Logger.Info(fmt.Sprint("Init ProxyPool Success"))
 		//定时刷新代理cookies
-		common.AsyncLoopTask(30*time.Minute, func() {
+		common.AsyncLoopTask(1*time.Minute, func() {
 			for _, proxy := range Instance.Proxies {
 				_ = proxy.getCookies()
 			}
@@ -100,7 +101,7 @@ func (P *Proxy) getCookies() error {
 	// 设置请求头
 	request.Header.Set("User-Agent", P.Ua)
 	// 获取请求客户端
-	client := RequestClient.NewTlsClient(60, profiles.Okhttp4Android13)
+	client := RequestClient.NewTlsClient(60, ClientProfile)
 	// 设置代理
 	_ = client.SetProxy(P.Link.String())
 	// 发送 GET 请求
