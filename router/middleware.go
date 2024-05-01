@@ -55,7 +55,7 @@ func inArray(user string, list []string) bool {
 // V1Auth 验证v1 api 的token
 func V1Auth(c *gin.Context) {
 	authToken := c.Request.Header.Get("Authorization")
-	if authToken == "" {
+	if authToken == "" && len(config.AUTHORIZATIONS) > 0 {
 		common.ErrorResponse(c, 401, "You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY)", nil)
 		return
 	}
