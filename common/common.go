@@ -39,11 +39,11 @@ func GetTimestampSecond(second int) int64 {
 
 func ParseUrl(link string) *url.URL {
 	if link == "" {
-		return nil
+		return &url.URL{}
 	}
 	u, err := url.Parse(link)
 	if err != nil {
-		return nil
+		return &url.URL{}
 	}
 	return u
 }

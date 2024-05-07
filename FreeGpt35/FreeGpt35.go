@@ -8,6 +8,7 @@ import (
 	"free-gpt3.5-2api/RequestClient"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
+	"free-gpt3.5-2api/constant"
 	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/google/uuid"
@@ -20,7 +21,15 @@ var (
 	AuthUrl = BaseUrl + "/backend-anon/sentinel/chat-requirements"
 )
 
-type Gpt35 struct {
+// NewFreeAuthType 定义一个枚举类型
+type NewFreeAuthType int
+
+const (
+	NewFreeAuthNormal  NewFreeAuthType = 0 //正常获取
+	NewFreeAuthRefresh NewFreeAuthType = 1 // 刷新获取
+)
+
+type FreeGpt35 struct {
 	RequestClient RequestClient.RequestClient
 	Proxy         *ProxyPool.Proxy
 	MaxUseCount   int
@@ -48,43 +57,49 @@ type turnstile struct {
 	Required bool `json:"required"`
 }
 
-// NewGpt35 创建 Gpt35 实例 0 无论网络是否被标记限制都获取 1 在网络未标记时才能获取
-func NewGpt35(newType int) *Gpt35 {
+// NewFreeGpt35 创建 FreeGpt35 实例 0 无论网络是否被标记限制都获取 1 在网络未标记时才能获取
+func NewFreeGpt35(newType NewFreeAuthType, maxUseCount int, expiresAt int64) *FreeGpt35 {
 	// 创建 FreeGpt35 实例
-	gpt35 := &Gpt35{
-		MaxUseCount: -1,
-		ExpiresAt:   -1,
+	freeGpt35 := &FreeGpt35{
+		MaxUseCount: maxUseCount,
+		ExpiresAt:   expiresAt,
 		FreeAuth:    &freeAuth{},
 	}
-	// 获取代理
-	err := gpt35.getNewProxy(newType)
-	if err != nil {
-		logger.Logger.Debug(err.Error())
-		return nil
-	}
 	// 获取请求客户端
-	err = gpt35.getNewRequestClient()
+	err := freeGpt35.newRequestClient()
 	if err != nil {
 		logger.Logger.Debug(err.Error())
 		return nil
 	}
-	// 获取新session
-	err = gpt35.getNewFreeAuth(newType, 1, common.GetTimestampSecond(config.AuthED))
+	// 获取并设置代理
+	err = freeGpt35.getProxy(newType)
 	if err != nil {
 		logger.Logger.Debug(err.Error())
 		return nil
 	}
-	return gpt35
+	// 获取cookies
+	err = freeGpt35.getCookies()
+	if err != nil {
+		logger.Logger.Debug(err.Error())
+		return nil
+	}
+	// 获取 FreeAuth
+	err = freeGpt35.newFreeAuth(newType)
+	if err != nil {
+		logger.Logger.Debug(err.Error())
+		return nil
+	}
+	return freeGpt35
 }
 
-func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, error) {
+func (FG *FreeGpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, error) {
 	request, err := RequestClient.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
 	request.Header.Set("accept", "*/*")
 	request.Header.Set("accept-language", "zh-CN,zh;q=0.9,zh-Hans;q=0.8,en;q=0.7")
-	for _, cookie := range G.Cookies {
+	for _, cookie := range FG.Cookies {
 		request.AddCookie(cookie)
 	}
 	request.Header.Set("oai-language", "en-US")
@@ -96,35 +111,37 @@ func (G *Gpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, 
 	request.Header.Set("sec-fetch-dest", "empty")
 	request.Header.Set("sec-fetch-mode", "cors")
 	request.Header.Set("sec-fetch-site", "same-origin")
-	request.Header.Set("user-agent", G.Ua)
+	request.Header.Set("user-agent", FG.Ua)
 	return request, nil
 }
 
-func (G *Gpt35) getNewProxy(newType int) error {
-	// 获取代理池
-	ProxyPoolInstance := ProxyPool.GetProxyPoolInstance()
-	// 获取代理
-	G.Proxy = ProxyPoolInstance.GetProxy()
-	// 获取cookies
-	G.Cookies = G.Proxy.Cookies
-	// 判断代理是否可用
-	if G.Proxy.CanUseAt > common.GetTimestampSecond(0) && newType == 1 {
-		errStr := fmt.Sprint(G.Proxy.Link, ": Proxy restricted, Reuse at ", G.Proxy.CanUseAt)
+func (FG *FreeGpt35) newRequestClient() error {
+	// 请求客户端
+	FG.RequestClient = RequestClient.NewTlsClient(300, constant.ClientProfile)
+	if FG.RequestClient == nil {
+		errStr := fmt.Sprint("RequestClient is nil")
+		logger.Logger.Debug(errStr)
 		return fmt.Errorf(errStr)
 	}
 	return nil
 }
 
-func (G *Gpt35) getNewRequestClient() error {
-	// 请求客户端
-	G.RequestClient = RequestClient.NewTlsClient(300, ProxyPool.ClientProfile)
-	if G.RequestClient == nil {
-		errStr := fmt.Sprint("RequestClient is nil")
-		logger.Logger.Debug(errStr)
+func (FG *FreeGpt35) getProxy(newFreeAuthType NewFreeAuthType) error {
+	// 获取代理池
+	ProxyPoolInstance := ProxyPool.GetProxyPoolInstance()
+	// 获取代理
+	FG.Proxy = ProxyPoolInstance.GetProxy()
+	// 判断代理是否可用
+	if FG.Proxy.CanUseAt > common.GetTimestampSecond(0) && newFreeAuthType == NewFreeAuthRefresh {
+		errStr := fmt.Sprint(FG.Proxy.Link, ": Proxy restricted, Reuse at ", FG.Proxy.CanUseAt)
 		return fmt.Errorf(errStr)
 	}
+	// Ua
+	FG.Ua = FG.Proxy.Ua
+	// 补全cookies
+	FG.Cookies = append(FG.Cookies, FG.Proxy.Cookies...)
 	// 设置代理
-	err := G.RequestClient.SetProxy(G.Proxy.Link.String())
+	err := FG.RequestClient.SetProxy(FG.Proxy.Link.String())
 	if err != nil {
 		errStr := fmt.Sprint("SetProxy Error: ", err)
 		logger.Logger.Debug(errStr)
@@ -132,51 +149,78 @@ func (G *Gpt35) getNewRequestClient() error {
 	return nil
 }
 
-func (G *Gpt35) getNewFreeAuth(newType int, maxUseCount int, expiresAt int64) error {
-	// Ua
-	G.Ua = G.Proxy.Ua
-	// Cookies
-	G.Cookies = G.Proxy.Cookies
+func (FG *FreeGpt35) getCookies() error {
+	// 获取cookies
+	request, err := FG.NewRequest("GET", BaseUrl, nil)
+	if err != nil {
+		return err
+	}
+	// 发送 GET 请求
+	response, err := FG.RequestClient.Do(request)
+	if err != nil {
+		return err
+	}
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(response.Body)
+	if response.StatusCode != 200 {
+		return fmt.Errorf("StatusCode: %d", response.StatusCode)
+	}
+	// 获取cookies
+	cookies := response.Cookies()
+	for i, cookie := range cookies {
+		if cookie.Name == "oai-did" {
+			FG.FreeAuth.OaiDeviceId = cookie.Value
+			cookies = append(cookies[:i], cookies[i+1:]...)
+		}
+		if cookie.Name == "__Secure-next-auth.callback-url" {
+			cookie.Value = "https://chat.openai.com"
+		}
+	}
+	// 设置cookies
+	FG.Cookies = append(FG.Cookies, cookies...)
+	return nil
+}
+
+func (FG *FreeGpt35) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
 	// 生成新的设备 ID
-	G.FreeAuth.OaiDeviceId = uuid.New().String()
+	if FG.FreeAuth.OaiDeviceId == "" {
+		FG.FreeAuth.OaiDeviceId = uuid.New().String()
+	}
 	// 创建请求
-	request, err := G.NewRequest("POST", AuthUrl, nil)
+	request, err := FG.NewRequest("POST", AuthUrl, nil)
 	if err != nil {
 		return err
 	}
 	// 设置请求头
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("oai-device-id", G.FreeAuth.OaiDeviceId)
+	request.Header.Set("oai-device-id", FG.FreeAuth.OaiDeviceId)
 	// 发送 POST 请求
-	response, err := G.RequestClient.Do(request)
+	response, err := FG.RequestClient.Do(request)
 	if err != nil {
 		return err
 	}
 	if response.StatusCode != 200 {
-		logger.Logger.Debug(fmt.Sprint("getNewFreeAuth: StatusCode: ", response.StatusCode))
-		if (response.StatusCode == 429 || response.StatusCode == 403) && newType == 1 {
-			G.Proxy.CanUseAt = common.GetTimestampSecond(300)
-			logger.Logger.Debug(fmt.Sprint("getNewFreeAuth: Proxy(", G.Proxy.Link, ")restricted, Reuse at ", G.Proxy.CanUseAt))
+		logger.Logger.Debug(fmt.Sprint("newFreeAuth: StatusCode: ", response.StatusCode))
+		if (response.StatusCode == 429 || response.StatusCode == 403) && newFreeAuthType == NewFreeAuthRefresh {
+			FG.Proxy.CanUseAt = common.GetTimestampSecond(300)
+			logger.Logger.Debug(fmt.Sprint("newFreeAuth: Proxy(", FG.Proxy.Link, ")restricted, Reuse at ", FG.Proxy.CanUseAt))
 		}
 		return fmt.Errorf("StatusCode: %d", response.StatusCode)
-	} else if newType == 0 {
+	} else if newFreeAuthType == 0 {
 		// 成功后更新代理的可用时间
-		G.Proxy.CanUseAt = common.GetTimestampSecond(0)
-		logger.Logger.Debug(fmt.Sprint("getNewFreeAuth: Proxy(", G.Proxy.Link, ")Reuse at ", G.Proxy.CanUseAt))
+		FG.Proxy.CanUseAt = common.GetTimestampSecond(0)
+		logger.Logger.Debug(fmt.Sprint("newFreeAuth: Proxy(", FG.Proxy.Link, ")Reuse at ", FG.Proxy.CanUseAt))
 	}
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(response.Body)
-	if err := json.NewDecoder(response.Body).Decode(&G.FreeAuth); err != nil {
+	if err := json.NewDecoder(response.Body).Decode(&FG.FreeAuth); err != nil {
 		return err
 	}
 	// ProofWork
-	if G.FreeAuth.ProofWork.Required {
-		G.FreeAuth.ProofWork.Ospt = ProofWork2.CalcProofToken(G.FreeAuth.ProofWork.Seed, G.FreeAuth.ProofWork.Difficulty, request.Header.Get("User-Agent"))
+	if FG.FreeAuth.ProofWork.Required {
+		FG.FreeAuth.ProofWork.Ospt = ProofWork2.CalcProofToken(FG.FreeAuth.ProofWork.Seed, FG.FreeAuth.ProofWork.Difficulty, request.Header.Get("User-Agent"))
 	}
-	// 设置 MaxUseCount
-	G.MaxUseCount = maxUseCount
-	// 设置 ExpiresAt
-	G.ExpiresAt = expiresAt
 	return nil
 }
