@@ -2,21 +2,14 @@ package ProxyPool
 
 import (
 	"fmt"
-	"free-gpt3.5-2api/RequestClient"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
+	"free-gpt3.5-2api/constant"
 	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
-	"github.com/bogdanfinn/tls-client/profiles"
-	"io"
 	"net/url"
 	"sync"
 	"time"
-)
-
-var (
-	ClientProfile = profiles.Safari_15_6_1
-	Ua            = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 )
 
 var (
@@ -43,32 +36,23 @@ func GetProxyPoolInstance() *ProxyPool {
 		Instance = NewProxyPool(nil)
 		// 遍历配置文件中的代理 添加到代理池
 		for _, px := range config.Proxy {
-			proxy := &Proxy{
-				Link:     common.ParseUrl(px),
-				CanUseAt: common.GetTimestampSecond(0),
-				Ua:       Ua,
-			}
+			proxy := NewProxy(px, common.GetTimestampSecond(0), constant.Ua)
 			_ = proxy.getCookies()
 			Instance.AddProxy(proxy)
 		}
-		logger.Logger.Info(fmt.Sprint("Init ProxyPool Success"))
 		//定时刷新代理cookies
 		common.AsyncLoopTask(1*time.Minute, func() {
 			for _, proxy := range Instance.Proxies {
 				_ = proxy.getCookies()
 			}
-
 		})
+		logger.Logger.Info(fmt.Sprint("Init ProxyPool Success"))
 	})
 	return Instance
 }
 
 func NewProxyPool(proxies []*Proxy) *ProxyPool {
-	proxy := &Proxy{
-		Link:     &url.URL{},
-		CanUseAt: common.GetTimestampSecond(0),
-		Ua:       Ua,
-	}
+	proxy := NewProxy("", common.GetTimestampSecond(0), constant.Ua)
 	_ = proxy.getCookies()
 	return &ProxyPool{
 		Proxies: append([]*Proxy{proxy}, proxies...),
@@ -90,40 +74,14 @@ func (PP *ProxyPool) AddProxy(proxy *Proxy) {
 	PP.Proxies = append(PP.Proxies, proxy)
 }
 
+func NewProxy(link string, cannotUseTime int64, ua string) *Proxy {
+	return &Proxy{
+		Link:     common.ParseUrl(link),
+		CanUseAt: cannotUseTime,
+		Ua:       ua,
+	}
+}
+
 func (P *Proxy) getCookies() error {
-	// 获取cookies
-	request, err := RequestClient.NewRequest("GET", "https://chat.openai.com", nil)
-	if err != nil {
-		return err
-	}
-	// 设置请求头
-	request.Header.Set("User-Agent", P.Ua)
-	// 获取请求客户端
-	client := RequestClient.NewTlsClient(60, ClientProfile)
-	// 设置代理
-	_ = client.SetProxy(P.Link.String())
-	// 发送 GET 请求
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(response.Body)
-	if response.StatusCode != 200 {
-		return fmt.Errorf("StatusCode: %d", response.StatusCode)
-	}
-	// 获取cookies
-	cookies := response.Cookies()
-	for i, cookie := range cookies {
-		if cookie.Name == "oai-did" {
-			cookies = append(cookies[:i], cookies[i+1:]...)
-		}
-		if cookie.Name == "__Secure-next-auth.callback-url" {
-			cookie.Value = "https://chat.openai.com"
-		}
-	}
-	// 设置cookies
-	P.Cookies = cookies
 	return nil
 }

@@ -21,7 +21,7 @@ import (
 
 func Gpt35Completions(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	// 获取 FreeGpt35 实例
-	ChatGpt35 := FreeGpt35Pool.GetGpt35PoolInstance().GetGpt35(3)
+	ChatGpt35 := FreeGpt35Pool.GetFreeGpt35PoolInstance().GetFreeGpt35(3)
 	if ChatGpt35 == nil {
 		errStr := "please restart the program、change the IP address、use a proxy to try again."
 		logger.Logger.Error(errStr)

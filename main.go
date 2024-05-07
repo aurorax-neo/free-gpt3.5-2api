@@ -12,7 +12,7 @@ import (
 
 func Init() {
 	ProxyPool.GetProxyPoolInstance()
-	FreeGpt35Pool.GetGpt35PoolInstance()
+	FreeGpt35Pool.GetFreeGpt35PoolInstance()
 }
 
 func main() {
