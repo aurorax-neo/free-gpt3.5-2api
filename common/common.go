@@ -223,17 +223,20 @@ func deepCopyValue(src, dst reflect.Value) {
 			return
 		}
 		// 递归处理指针指向的内容
-		newValue := reflect.New(src.Elem().Type())
-		deepCopyValue(src.Elem(), newValue.Elem())
-		dst.Set(newValue)
+		newDst := reflect.New(src.Elem().Type())
+		deepCopyValue(src.Elem(), newDst.Elem())
+		dst.Set(newDst)
 	case reflect.Struct:
 		for i := 0; i < src.NumField(); i++ {
 			// 递归处理结构体的字段
 			deepCopyValue(src.Field(i), dst.Field(i))
 		}
 	default:
-		// 处理基本类型和数组、切片、映射等
-		dst.Set(src)
+		// 检查目标值是否支持设置
+		if dst.CanSet() {
+			// 处理基本类型和数组、切片、映射等
+			dst.Set(src)
+		}
 	}
 }
 
