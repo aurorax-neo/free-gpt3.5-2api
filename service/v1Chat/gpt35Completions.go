@@ -222,10 +222,3 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqModel.ApiReq, resp *fhttp.
 		}
 	}
 }
-
-func isBlock(chatResp35 *respModel.ChatResp35) bool {
-	if chatResp35.ModerationResponse.Blocked {
-		return true
-	}
-	return false
-}
