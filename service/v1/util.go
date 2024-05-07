@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"free-gpt3.5-2api/service/v1Chat/reqModel"
+	"github.com/google/uuid"
 	"math/rand"
 )
 
@@ -29,4 +31,35 @@ func GenerateID(length int) string {
 		id += string(charset[rand.Intn(len(charset))])
 	}
 	return id
+}
+
+func ApiReq2ChatReq35(apiReq *reqModel.ApiReq) (chatReq *reqModel.ChatReq35) {
+	messages := make([]reqModel.ChatMessages, 0)
+	for _, apiMessage := range apiReq.Messages {
+		chatMessage := reqModel.ChatMessages{
+			Author: reqModel.ChatAuthor{
+				Role: apiMessage.Role,
+			},
+			Content: reqModel.ChatContent{
+				ContentType: "text",
+				Parts:       []string{apiMessage.Content},
+			},
+		}
+		messages = append(messages, chatMessage)
+	}
+
+	chatReq = &reqModel.ChatReq35{
+		Action:                     "next",
+		Messages:                   messages,
+		ParentMessageId:            uuid.New().String(),
+		Model:                      MappingModel(apiReq.Model),
+		TimeZoneOffsetMin:          -180,
+		Suggestions:                make([]string, 0),
+		HistoryAndTrainingDisabled: true,
+		ConversationMode: reqModel.ChatConversationMode{
+			Kind: "primary_assistant",
+		},
+		WebsocketRequestId: uuid.New().String(),
+	}
+	return chatReq
 }
