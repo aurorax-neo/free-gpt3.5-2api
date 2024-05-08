@@ -270,3 +270,16 @@ func OutResponse(res *fhttp.Response) {
 		fmt.Println(string(dump))
 	}
 }
+
+func IsStrInArray(str string, strS []string) bool {
+	// 如果 strS 为空，直接返回 true
+	if len(strS) == 0 {
+		return true
+	}
+	for _, v := range strS {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}

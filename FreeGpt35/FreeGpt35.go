@@ -16,9 +16,10 @@ import (
 )
 
 var (
-	BaseUrl = config.BaseUrl
-	ChatUrl = BaseUrl + "/backend-anon/conversation"
-	AuthUrl = BaseUrl + "/backend-anon/sentinel/chat-requirements"
+	BaseUrl          = config.BaseUrl
+	ChatUrl          = BaseUrl + "/backend-anon/conversation"
+	AuthUrl          = BaseUrl + "/backend-anon/sentinel/chat-requirements"
+	OfficialBaseURLS = []string{"https://chat.openai.com", "https://chatgpt.com"}
 )
 
 // NewFreeAuthType 定义一个枚举类型
@@ -78,10 +79,12 @@ func NewFreeGpt35(newType NewFreeAuthType, maxUseCount int, expiresAt int64) *Fr
 		return nil
 	}
 	// 获取cookies
-	err = freeGpt35.getCookies()
-	if err != nil {
-		logger.Logger.Debug(err.Error())
-		return nil
+	if common.IsStrInArray(BaseUrl, OfficialBaseURLS) {
+		err = freeGpt35.getCookies()
+		if err != nil {
+			logger.Logger.Debug(err.Error())
+			return nil
+		}
 	}
 	// 获取 FreeAuth
 	err = freeGpt35.newFreeAuth(newType)
@@ -151,10 +154,12 @@ func (FG *FreeGpt35) getProxy(newFreeAuthType NewFreeAuthType) error {
 
 func (FG *FreeGpt35) getCookies() error {
 	// 获取cookies
-	request, err := FG.NewRequest("GET", BaseUrl, nil)
+	request, err := FG.NewRequest("GET", fmt.Sprint(BaseUrl, "/?oai-dm=1"), nil)
 	if err != nil {
 		return err
 	}
+	// 设置请求头
+	request.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
 	// 发送 GET 请求
 	response, err := FG.RequestClient.Do(request)
 	if err != nil {
@@ -174,7 +179,7 @@ func (FG *FreeGpt35) getCookies() error {
 			cookies = append(cookies[:i], cookies[i+1:]...)
 		}
 		if cookie.Name == "__Secure-next-auth.callback-url" {
-			cookie.Value = "https://chat.openai.com"
+			cookie.Value = BaseUrl
 		}
 	}
 	// 设置cookies

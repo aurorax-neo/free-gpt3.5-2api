@@ -39,19 +39,6 @@ func V1Request(c *gin.Context) {
 	c.Next()
 }
 
-func inArray(user string, list []string) bool {
-	// 如果 list 为空，直接返回 true
-	if len(list) == 0 {
-		return true
-	}
-	for _, v := range list {
-		if v == user {
-			return true
-		}
-	}
-	return false
-}
-
 // V1Auth 验证v1 api 的token
 func V1Auth(c *gin.Context) {
 	authToken := c.Request.Header.Get("Authorization")
@@ -60,7 +47,7 @@ func V1Auth(c *gin.Context) {
 		return
 	}
 	// 判断 authToken 是否在 config.CONFIG.AUTHORIZATIONS 列表
-	if !inArray(authToken, config.AUTHORIZATIONS) {
+	if !common.IsStrInArray(authToken, config.AUTHORIZATIONS) {
 		common.ErrorResponse(c, 401, "Incorrect API key provided: sk-4yNZz***************************************6mjw.", nil)
 		return
 	}

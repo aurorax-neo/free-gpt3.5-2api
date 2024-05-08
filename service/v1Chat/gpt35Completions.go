@@ -7,8 +7,8 @@ import (
 	"free-gpt3.5-2api/FreeGpt35Pool"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/service/v1"
-	"free-gpt3.5-2api/service/v1Chat/reqmodel"
-	"free-gpt3.5-2api/service/v1Chat/respmodel"
+	"free-gpt3.5-2api/service/v1Chat/reqModel"
+	"free-gpt3.5-2api/service/v1Chat/respModel"
 	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/gin-gonic/gin"
@@ -16,10 +16,9 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 )
 
-func Gpt35Completions(c *gin.Context, apiReq *reqmodel.ApiReq) {
+func Gpt35Completions(c *gin.Context, apiReq *reqModel.ApiReq) {
 	// 获取 FreeGpt35 实例
 	ChatGpt35 := FreeGpt35Pool.GetFreeGpt35PoolInstance().GetFreeGpt35(3)
 	if ChatGpt35 == nil {
@@ -29,7 +28,7 @@ func Gpt35Completions(c *gin.Context, apiReq *reqmodel.ApiReq) {
 		return
 	}
 	// 转换请求
-	ChatReq35 := reqmodel.ApiReq2ChatReq35(apiReq)
+	ChatReq35 := v1.ApiReq2ChatReq35(apiReq)
 	// 请求参数
 	body, err := common.Struct2BytesBuffer(ChatReq35)
 	if err != nil {
@@ -78,12 +77,12 @@ func Gpt35Completions(c *gin.Context, apiReq *reqmodel.ApiReq) {
 	}
 }
 
-func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Response) {
+func __CompletionsStream(c *gin.Context, apiReq *reqModel.ApiReq, resp *fhttp.Response) {
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
 	messageTemp := ""
 	decoder := eventsource.NewDecoder(resp.Body)
-	defer func(decoder *eventsource.Decoder) {
-		_, _ = decoder.Decode()
-	}(decoder)
 	// 响应id
 	id := v1.GenerateID(29)
 	handlingSigns := false
@@ -102,26 +101,10 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Re
 		}
 		// 结束标志
 		if data == "[DONE]" {
-			apiRespObj := &respmodel.StreamObj{}
-			// id
-			apiRespObj.ID = id
-			// created
-			apiRespObj.Created = time.Now().Unix()
-			// object
-			apiRespObj.Object = "chat.completion.chunk"
-			// choices
-			delta := respmodel.StreamDeltaObj{
-				Content: "",
-			}
-			choices := respmodel.StreamChoiceObj{
-				Delta:        delta,
-				FinishReason: "stop",
-			}
-			apiRespObj.Choices = append(apiRespObj.Choices, choices)
-			// model
-			apiRespObj.Model = apiReq.Model
-			// 生成响应
-			bytes, err := common.Struct2Bytes(apiRespObj)
+			// 生成响应 stream
+			apiRespStream := respModel.NewApiRespStream(id, apiReq.Model, "", "stop")
+			// 生成响应 bytes
+			bytes, err := common.Struct2Bytes(apiRespStream)
 			if err != nil {
 				logger.Logger.Error(err.Error())
 				continue
@@ -130,9 +113,9 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Re
 			c.SSEvent(name, fmt.Sprint(" ", string(bytes)))
 			// 结束
 			c.SSEvent(name, " [DONE]")
-			break
+			return
 		}
-		chatResp35 := &respmodel.ChatResp35{}
+		chatResp35 := &respModel.ChatResp35{}
 		err = json.Unmarshal([]byte(data), chatResp35)
 		if chatResp35.Error != nil && !handlingSigns {
 			logger.Logger.Error(fmt.Sprint(chatResp35.Error))
@@ -142,6 +125,12 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Re
 		// 脏数据不处理
 		if err != nil {
 			continue
+		}
+		// 被block
+		if contentIsBlocked(chatResp35) {
+			// 返回响应
+			common.ErrorResponse(c, http.StatusBadRequest, "content is blocked.", "")
+			return
 		}
 		// 仅处理assistant的消息
 		if chatResp35.Message.Author.Role == "assistant" && (chatResp35.Message.Status == "in_progress" || handlingSigns) {
@@ -156,26 +145,10 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Re
 			if content == "" {
 				continue
 			}
-			// 生成响应 model
-			apiRespObj := &respmodel.StreamObj{}
-			// id
-			apiRespObj.ID = id
-			// created
-			apiRespObj.Created = time.Now().Unix()
-			// object
-			apiRespObj.Object = "chat.completion.chunk"
-			// choices
-			delta := respmodel.StreamDeltaObj{
-				Content: content,
-			}
-			choices := respmodel.StreamChoiceObj{
-				Delta: delta,
-			}
-			apiRespObj.Choices = append(apiRespObj.Choices, choices)
-			// model
-			apiRespObj.Model = apiReq.Model
-			// 生成响应
-			bytes, err := common.Struct2Bytes(apiRespObj)
+			// 生成响应 stream
+			apiRespStream := respModel.NewApiRespStream(id, apiReq.Model, content, "")
+			// 生成响应 bytes
+			bytes, err := common.Struct2Bytes(apiRespStream)
 			if err != nil {
 				logger.Logger.Error(err.Error())
 				continue
@@ -188,19 +161,19 @@ func __CompletionsStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Re
 	}
 }
 
-func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.Response) {
+func __CompletionsNoStream(c *gin.Context, apiReq *reqModel.ApiReq, resp *fhttp.Response) {
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
 	content := ""
 	decoder := eventsource.NewDecoder(resp.Body)
-	defer func(decoder *eventsource.Decoder) {
-		_, _ = decoder.Decode()
-	}(decoder)
 	handlingSigns := false
 	for {
 		event, err := decoder.Decode()
 		if err != nil {
 			logger.Logger.Error(err.Error())
 			common.ErrorResponse(c, http.StatusInternalServerError, "", err)
-			break
+			return
 		}
 		data := event.Data()
 		// 空白数据不处理
@@ -209,42 +182,22 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.
 		}
 		// 结束标志
 		if data == "[DONE]" {
-			apiRespObj := &respmodel.JsonObj{}
-			// id
-			apiRespObj.ID = v1.GenerateID(29)
-			// created
-			apiRespObj.Created = time.Now().Unix()
-			// object
-			apiRespObj.Object = "chat.completion"
-			// model
-			apiRespObj.Model = apiReq.Model
-			// usage
-			usage := respmodel.JsonUsageObj{
-				PromptTokens:     0,
-				CompletionTokens: 0,
-				TotalTokens:      0,
-			}
-			apiRespObj.Usage = usage
-			// choices
-			message := respmodel.JsonMessageObj{
-				Role:    "assistant",
-				Content: content,
-			}
-			choice := respmodel.JsonChoiceObj{
-				Message:      message,
-				FinishReason: "stop",
-				Index:        0,
-			}
-			apiRespObj.Choices = append(apiRespObj.Choices, choice)
+			apiRespObj := respModel.NewApiRespJson(v1.GenerateID(29), apiReq.Model, content)
 			// 返回响应
 			c.JSON(http.StatusOK, apiRespObj)
-			break
+			return
 		}
-		chatResp35 := &respmodel.ChatResp35{}
+		chatResp35 := &respModel.ChatResp35{}
 		err = json.Unmarshal([]byte(data), chatResp35)
 		if chatResp35.Error != nil && !handlingSigns {
 			logger.Logger.Error(fmt.Sprint(chatResp35.Error))
 			common.ErrorResponse(c, http.StatusInternalServerError, "", chatResp35.Error)
+			return
+		}
+		// 被block
+		if contentIsBlocked(chatResp35) {
+			// 返回响应
+			common.ErrorResponse(c, http.StatusBadRequest, "content is blocked.", "")
 			return
 		}
 		// 脏数据不处理
@@ -268,4 +221,11 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqmodel.ApiReq, resp *fhttp.
 			continue
 		}
 	}
+}
+
+func contentIsBlocked(chatResp35 *respModel.ChatResp35) bool {
+	if !chatResp35.IsCompletion && chatResp35.ModerationResponse.Blocked {
+		return true
+	}
+	return false
 }

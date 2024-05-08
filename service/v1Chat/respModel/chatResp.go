@@ -1,4 +1,4 @@
-package respmodel
+package respModel
 
 type ChatResp35 struct {
 	Message struct {
@@ -31,4 +31,14 @@ type ChatResp35 struct {
 	} `json:"message"`
 	ConversationId string      `json:"conversation_id"`
 	Error          interface{} `json:"error"`
+	// 审核
+	Type               string `json:"type"`
+	MessageId          string `json:"message_id"`
+	IsCompletion       bool   `json:"is_completion"`
+	ModerationResponse struct {
+		Flagged      bool          `json:"flagged"`
+		Disclaimers  []interface{} `json:"disclaimers"`
+		Blocked      bool          `json:"blocked"`
+		ModerationId string        `json:"moderation_id"`
+	} `json:"moderation_response"`
 }
