@@ -127,7 +127,7 @@ func __CompletionsStream(c *gin.Context, apiReq *reqModel.ApiReq, resp *fhttp.Re
 			continue
 		}
 		// 被block
-		if chatResp35.ModerationResponse.Blocked {
+		if contentIsBlocked(chatResp35) {
 			// 返回响应
 			common.ErrorResponse(c, http.StatusBadRequest, "content is blocked.", "")
 			return
@@ -195,7 +195,7 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqModel.ApiReq, resp *fhttp.
 			return
 		}
 		// 被block
-		if chatResp35.ModerationResponse.Blocked {
+		if contentIsBlocked(chatResp35) {
 			// 返回响应
 			common.ErrorResponse(c, http.StatusBadRequest, "content is blocked.", "")
 			return
@@ -221,4 +221,11 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqModel.ApiReq, resp *fhttp.
 			continue
 		}
 	}
+}
+
+func contentIsBlocked(chatResp35 *respModel.ChatResp35) bool {
+	if !chatResp35.IsCompletion && chatResp35.ModerationResponse.Blocked {
+		return true
+	}
+	return false
 }
