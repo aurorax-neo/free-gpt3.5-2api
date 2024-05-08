@@ -46,7 +46,7 @@ func init() {
 	// BASE_URL
 	BaseUrl = os.Getenv("BASE_URL")
 	if BaseUrl == "" {
-		BaseUrl = "https://chat.openai.com"
+		BaseUrl = "https://chatgpt.com"
 	} else {
 		BaseUrl = strings.TrimRight(BaseUrl, "/")
 	}
