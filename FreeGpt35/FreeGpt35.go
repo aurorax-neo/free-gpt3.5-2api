@@ -115,6 +115,7 @@ func (FG *FreeGpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Requ
 	request.Header.Set("sec-fetch-mode", "cors")
 	request.Header.Set("sec-fetch-site", "same-origin")
 	request.Header.Set("user-agent", FG.Ua)
+	request.Header.Set("Connection", "close")
 	return request, nil
 }
 
