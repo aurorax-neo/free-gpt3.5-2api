@@ -34,7 +34,7 @@ func GetFreeGpt35PoolInstance() *FreeGpt35Pool {
 		// 初始化 FreeGpt35Pool
 		instance = newFreeGpt35Pool(config.PoolMaxCount)
 		// 定时刷新 FreeGpt35Pool
-		instance.refreshFreeGpt35Pool(time.Millisecond * 256)
+		instance.refreshFreeGpt35Pool(time.Millisecond * 128)
 		//
 		logger.Logger.Info(fmt.Sprint("Init FreeGpt35Pool Success", ", PoolMaxCount: ", config.PoolMaxCount, ", AuthExpirationDate: ", config.AuthED))
 	})
@@ -84,16 +84,15 @@ func (G *FreeGpt35Pool) GetFreeGpt35(retry int) *FreeGpt35.FreeGpt35 {
 	n := G.queue.Peek()
 	if n != nil {
 		gpt35 := n.Value.(*FreeGpt35.FreeGpt35)
-		if G.isLiveGpt35(gpt35) { //有缓存
-			// 深拷贝
-			gpt35_ := common.DeepCopyStruct(gpt35).(*FreeGpt35.FreeGpt35)
-			// 减少 FreeGpt35 实例的最大使用次数
-			gpt35.MaxUseCount--
+		// 判断 FreeGpt35 实例是否有效
+		if G.isLiveGpt35(gpt35) {
+			// 减少 FreeGpt35 实例可用次数
+			gpt35.SubFreeGpt35MaxUseCount()
 			// 判断 FreeGpt35 实例是否有效 无效则移除
 			if !G.isLiveGpt35(gpt35) {
 				G.queue.Dequeue()
 			}
-			return gpt35_
+			return gpt35
 		} else if retry > 0 {
 			time.Sleep(time.Millisecond * 128)
 			return G.GetFreeGpt35(retry - 1)
@@ -115,7 +114,7 @@ func (G *FreeGpt35Pool) GetCapacity() int {
 
 // IsFull 检查队列是否已满
 func (G *FreeGpt35Pool) IsFull() bool {
-	return G.GetSize() == G.capacity
+	return G.queue.Len() == G.capacity
 }
 
 // AddFreeGpt35 入队

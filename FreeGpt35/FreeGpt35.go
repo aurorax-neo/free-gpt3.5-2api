@@ -65,6 +65,7 @@ func NewFreeGpt35(newType NewFreeAuthType, maxUseCount int, expiresAt int64) *Fr
 		MaxUseCount: maxUseCount,
 		ExpiresAt:   expiresAt,
 		FreeAuth:    &freeAuth{},
+		Ua:          constant.Ua,
 	}
 	// 获取请求客户端
 	err := freeGpt35.newRequestClient()
@@ -140,8 +141,6 @@ func (FG *FreeGpt35) getProxy(newFreeAuthType NewFreeAuthType) error {
 		errStr := fmt.Sprint(FG.Proxy.Link, ": Proxy restricted, Reuse at ", FG.Proxy.CanUseAt)
 		return fmt.Errorf(errStr)
 	}
-	// Ua
-	FG.Ua = FG.Proxy.Ua
 	// 补全cookies
 	FG.Cookies = append(FG.Cookies, FG.Proxy.Cookies...)
 	// 设置代理
@@ -229,4 +228,10 @@ func (FG *FreeGpt35) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
 		FG.FreeAuth.ProofWork.Ospt = ProofWork2.CalcProofToken(FG.FreeAuth.ProofWork.Seed, FG.FreeAuth.ProofWork.Difficulty, request.Header.Get("User-Agent"))
 	}
 	return nil
+}
+
+// SubFreeGpt35MaxUseCount 减少 FreeGpt35 实例的最大使用次数
+func (FG *FreeGpt35) SubFreeGpt35MaxUseCount() *FreeGpt35 {
+	FG.MaxUseCount--
+	return FG
 }
