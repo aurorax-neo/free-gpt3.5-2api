@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
-	"free-gpt3.5-2api/constant"
 	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
 	"net/url"
@@ -25,7 +24,6 @@ type ProxyPool struct {
 type Proxy struct {
 	Link     *url.URL
 	CanUseAt int64
-	Ua       string
 	Cookies  []*fhttp.Cookie
 }
 
@@ -36,7 +34,7 @@ func GetProxyPoolInstance() *ProxyPool {
 		Instance = NewProxyPool(nil)
 		// 遍历配置文件中的代理 添加到代理池
 		for _, px := range config.Proxy {
-			proxy := NewProxy(px, common.GetTimestampSecond(0), constant.Ua)
+			proxy := NewProxy(px, common.GetTimestampSecond(0))
 			_ = proxy.getCookies()
 			Instance.AddProxy(proxy)
 		}
@@ -52,7 +50,7 @@ func GetProxyPoolInstance() *ProxyPool {
 }
 
 func NewProxyPool(proxies []*Proxy) *ProxyPool {
-	proxy := NewProxy("", common.GetTimestampSecond(0), constant.Ua)
+	proxy := NewProxy("", common.GetTimestampSecond(0))
 	_ = proxy.getCookies()
 	return &ProxyPool{
 		Proxies: append([]*Proxy{proxy}, proxies...),
@@ -74,11 +72,10 @@ func (PP *ProxyPool) AddProxy(proxy *Proxy) {
 	PP.Proxies = append(PP.Proxies, proxy)
 }
 
-func NewProxy(link string, cannotUseTime int64, ua string) *Proxy {
+func NewProxy(link string, cannotUseTime int64) *Proxy {
 	return &Proxy{
 		Link:     common.ParseUrl(link),
 		CanUseAt: cannotUseTime,
-		Ua:       ua,
 	}
 }
 

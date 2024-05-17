@@ -202,42 +202,15 @@ func AsyncLoopTask(sleep time.Duration, fun func()) {
 }
 
 // DeepCopyStruct 深拷贝函数
-func DeepCopyStruct(src interface{}) interface{} {
-	// 获取源对象的类型信息
-	srcType := reflect.TypeOf(src)
-	// 创建目标对象
-	dst := reflect.New(srcType).Elem()
-
-	// 深拷贝过程
-	deepCopyValue(reflect.ValueOf(src), dst)
-
-	return dst.Interface()
-}
-
-// 递归进行深拷贝
-func deepCopyValue(src, dst reflect.Value) {
-	switch src.Kind() {
-	case reflect.Ptr:
-		if src.IsNil() {
-			dst.Set(src)
-			return
-		}
-		// 递归处理指针指向的内容
-		newDst := reflect.New(src.Elem().Type())
-		deepCopyValue(src.Elem(), newDst.Elem())
-		dst.Set(newDst)
-	case reflect.Struct:
-		for i := 0; i < src.NumField(); i++ {
-			// 递归处理结构体的字段
-			deepCopyValue(src.Field(i), dst.Field(i))
-		}
-	default:
-		// 检查目标值是否支持设置
-		if dst.CanSet() {
-			// 处理基本类型和数组、切片、映射等
-			dst.Set(src)
-		}
+func DeepCopyStruct(original interface{}) interface{} {
+	// 使用 JSON 序列化和反序列化来实现深拷贝
+	data, err := json.Marshal(original)
+	if err != nil {
+		return nil
 	}
+	target := reflect.New(reflect.TypeOf(original).Elem()).Interface()
+	err = json.Unmarshal(data, target)
+	return target
 }
 
 func RandomHexadecimalString() string {
