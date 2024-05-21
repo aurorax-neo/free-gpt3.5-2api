@@ -2,6 +2,7 @@ package FreeChatPool
 
 import (
 	"fmt"
+	"free-gpt3.5-2api/AccAuthPool"
 	"free-gpt3.5-2api/FreeChat"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
@@ -50,11 +51,11 @@ func (G *FreeChatPool) refreshFreeChatPool(sleep time.Duration) {
 			return
 		}
 		// 获取新 FreeChat 实例
-		freeChat := FreeChat.NewFreeGpt35(FreeChat.NewFreeAuthRefresh, 1, common.GetTimestampSecond(config.AuthED), "")
+		freeChat := FreeChat.NewFreeChat(FreeChat.NewFreeAuthRefresh, 1, common.GetTimestampSecond(config.AuthED), "")
 		// 判断 FreeChat 实例是否有效
 		if G.isLiveFreeChat(freeChat) {
 			// 入队新 FreeChat 实例
-			G.AddFreeGpt35(freeChat)
+			G.AddFreeChat(freeChat)
 		}
 	})
 	// 检测并移除无效 FreeChat 实例
@@ -81,8 +82,18 @@ func (G *FreeChatPool) isLiveFreeChat(freeChat *FreeChat.FreeChat) bool {
 }
 
 func (G *FreeChatPool) GetFreeChat(accAuth string, retry int) *FreeChat.FreeChat {
+	// 判断是否为指定账号
 	if strings.HasPrefix(accAuth, "Bearer eyJhbGciOiJSUzI1NiI") {
-		freeChat := FreeChat.NewFreeGpt35(FreeChat.NewFreeAuthNormal, 1, common.GetTimestampSecond(config.AuthED), accAuth)
+		freeChat := FreeChat.NewFreeChat(FreeChat.NewFreeAuthNormal, 1, common.GetTimestampSecond(config.AuthED), accAuth)
+		if freeChat == nil && retry > 0 {
+			return G.GetFreeChat(accAuth, retry-1)
+		}
+		return freeChat
+	}
+	// 判断是否使用 AccAuthPool
+	if strings.HasPrefix(accAuth, "Bearer "+AccAuthPool.AccAuthAuthorizationPre) && !AccAuthPool.GetAccAuthPoolInstance().IsEmpty() {
+		accA := AccAuthPool.GetAccAuthPoolInstance().GetAccAuth()
+		freeChat := FreeChat.NewFreeChat(FreeChat.NewFreeAuthNormal, 1, common.GetTimestampSecond(config.AuthED), accA)
 		if freeChat == nil && retry > 0 {
 			return G.GetFreeChat(accAuth, retry-1)
 		}
@@ -95,7 +106,7 @@ func (G *FreeChatPool) GetFreeChat(accAuth string, retry int) *FreeChat.FreeChat
 		// 判断 FreeChat 实例是否有效
 		if G.isLiveFreeChat(freeChat) {
 			// 减少 FreeChat 实例可用次数
-			freeChat.SubFreeGpt35MaxUseCount()
+			freeChat.SubFreeChatMaxUseCount()
 			// 判断 FreeChat 实例是否有效 无效则移除
 			if !G.isLiveFreeChat(freeChat) {
 				G.queue.Dequeue()
@@ -107,7 +118,7 @@ func (G *FreeChatPool) GetFreeChat(accAuth string, retry int) *FreeChat.FreeChat
 		}
 	}
 	// 缓存内无可用 FreeChat 实例，返回新 FreeChat 实例
-	return FreeChat.NewFreeGpt35(FreeChat.NewFreeAuthNormal, 1, common.GetTimestampSecond(config.AuthED), "")
+	return FreeChat.NewFreeChat(FreeChat.NewFreeAuthNormal, 1, common.GetTimestampSecond(config.AuthED), "")
 }
 
 // GetSize 获取队列当前元素个数
@@ -125,8 +136,8 @@ func (G *FreeChatPool) IsFull() bool {
 	return G.queue.Len() == G.capacity
 }
 
-// AddFreeGpt35 入队
-func (G *FreeChatPool) AddFreeGpt35(v *FreeChat.FreeChat) bool {
+// AddFreeChat 入队
+func (G *FreeChatPool) AddFreeChat(v *FreeChat.FreeChat) bool {
 	if G.IsFull() || v == nil {
 		return false
 	}

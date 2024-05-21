@@ -16,6 +16,7 @@ func SetRouter(router *gin.Engine) {
 	v1Router.Use(V1Response)
 	v1Router.Use(V1Auth)
 	v1Router.GET("/tokens", v1.Tokens)
+	v1Router.GET("/accTokens", v1.AccTokens)
 	v1Router.OPTIONS("/chat/completions", nil)
 	v1Router.POST("/chat/completions", v1Chat.Completions)
 }

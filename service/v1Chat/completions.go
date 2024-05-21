@@ -3,6 +3,7 @@ package v1Chat
 import (
 	"encoding/json"
 	"fmt"
+	"free-gpt3.5-2api/AccAuthPool"
 	"free-gpt3.5-2api/FreeChatPool"
 
 	"free-gpt3.5-2api/common"
@@ -78,6 +79,9 @@ func Completions(c *gin.Context) {
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(response.Body)
+	if response.StatusCode == 429 {
+		AccAuthPool.GetAccAuthPoolInstance().SetCanUseAt(request.Header.Get("Authorization"), common.GetTimestampSecond(3600))
+	}
 	if response.StatusCode != http.StatusOK {
 		errStr := "Request error"
 		logger.Logger.Error(fmt.Sprint(errStr, " ", response.StatusCode))

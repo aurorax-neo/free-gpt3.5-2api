@@ -63,8 +63,8 @@ type turnstile struct {
 	Required bool `json:"required"`
 }
 
-// NewFreeGpt35 创建 FreeChat 实例 0 无论网络是否被标记限制都获取 1 在网络未标记时才能获取
-func NewFreeGpt35(newType NewFreeAuthType, maxUseCount int, expiresAt int64, accAuth string) *FreeChat {
+// NewFreeChat 创建 FreeChat 实例 0 无论网络是否被标记限制都获取 1 在网络未标记时才能获取
+func NewFreeChat(newType NewFreeAuthType, maxUseCount int, expiresAt int64, accAuth string) *FreeChat {
 	// 创建 FreeChat 实例
 	freeChat := &FreeChat{
 		MaxUseCount: maxUseCount,
@@ -253,8 +253,8 @@ func (FG *FreeChat) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
 	return nil
 }
 
-// SubFreeGpt35MaxUseCount 减少 FreeChat 实例的最大使用次数
-func (FG *FreeChat) SubFreeGpt35MaxUseCount() *FreeChat {
+// SubFreeChatMaxUseCount 减少 FreeChat 实例的最大使用次数
+func (FG *FreeChat) SubFreeChatMaxUseCount() *FreeChat {
 	FG.MaxUseCount--
 	return FG
 }

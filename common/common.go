@@ -76,10 +76,10 @@ func Struct2Bytes(v interface{}) ([]byte, error) {
 	return bytes_, nil
 }
 
-func SplitAndAddBearer(authTokens string) []string {
+func SplitAndAddPre(pre string, str string, sep string) []string {
 	var authTokenList []string
-	for _, v := range strings.Split(authTokens, ",") {
-		authTokenList = append(authTokenList, "Bearer "+v)
+	for _, v := range strings.Split(str, sep) {
+		authTokenList = append(authTokenList, pre+v)
 	}
 	return authTokenList
 }
