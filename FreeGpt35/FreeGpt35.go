@@ -13,6 +13,7 @@ import (
 	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/google/uuid"
 	"io"
+	"strings"
 )
 
 var (
@@ -47,6 +48,7 @@ type freeAuth struct {
 	Turnstile   turnstile            `json:"turnstile"`
 	ProofWork   ProofWork2.ProofWork `json:"proofofwork"`
 	Token       string               `json:"token"`
+	ForceLogin  bool                 `json:"force_login"`
 }
 
 type arkose struct {
@@ -222,6 +224,14 @@ func (FG *FreeGpt35) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
 	}(response.Body)
 	if err := json.NewDecoder(response.Body).Decode(&FG.FreeAuth); err != nil {
 		return err
+	}
+	if FG.FreeAuth.ForceLogin {
+		errStr := fmt.Sprint("ForceLogin: ", FG.FreeAuth.ForceLogin)
+		return fmt.Errorf(errStr)
+	}
+	if strings.HasPrefix(FG.FreeAuth.ProofWork.Difficulty, "00003") {
+		errStr := fmt.Sprint("Too Difficulty: ", FG.FreeAuth.ProofWork.Difficulty)
+		return fmt.Errorf(errStr)
 	}
 	// ProofWork
 	if FG.FreeAuth.ProofWork.Required {

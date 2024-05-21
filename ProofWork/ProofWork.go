@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	numberCollisions = 100000
+	numberCollisions = 500000
 	cores            = []int{8, 12, 16, 24}
 	screens          = []int{3000, 4000, 6000}
 	timeLayout       = "Mon Jan 2 2006 15:04:05"
@@ -39,15 +39,16 @@ func getConfig(userAgent string) []interface{} {
 
 func CalcProofToken(seed string, diff string, userAgent string) string {
 	config := getConfig(userAgent)
+	diffLen := len(diff)
 	hasher := sha3.New512()
 	for i := 0; i < numberCollisions; i++ {
-		config[3] = i
+		config[3] = i * 4
 		jsonStr, _ := json.Marshal(config)
 		base := base64.StdEncoding.EncodeToString(jsonStr)
 		hasher.Write([]byte(seed + base))
 		hash := hasher.Sum(nil)
 		hasher.Reset()
-		if hex.EncodeToString(hash[:len(diff)]) <= diff {
+		if hex.EncodeToString(hash[:diffLen]) <= diff {
 			return "gAAAAAB" + base
 		}
 	}
