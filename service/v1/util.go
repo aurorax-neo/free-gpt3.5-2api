@@ -30,7 +30,7 @@ func GenerateID(length int) string {
 	return id
 }
 
-func ApiReq2ChatReq35(apiReq *reqModel.ApiReq) (chatReq *reqModel.ChatReq35) {
+func ApiReq2ChatReq35(apiReq *reqModel.ApiReq) (chatReq *reqModel.ChatReq) {
 	messages := make([]reqModel.ChatMessages, 0)
 	for _, apiMessage := range apiReq.Messages {
 		chatMessage := reqModel.ChatMessages{
@@ -45,7 +45,7 @@ func ApiReq2ChatReq35(apiReq *reqModel.ApiReq) (chatReq *reqModel.ChatReq35) {
 		messages = append(messages, chatMessage)
 	}
 
-	chatReq = &reqModel.ChatReq35{
+	chatReq = &reqModel.ChatReq{
 		Action:                     "next",
 		Messages:                   messages,
 		ParentMessageId:            uuid.New().String(),

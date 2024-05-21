@@ -68,6 +68,7 @@ func Completions(c *gin.Context) {
 	if freeChat.FreeAuth.ProofWork.Required {
 		request.Header.Set("Openai-Sentinel-Proof-Token", freeChat.FreeAuth.ProofWork.Ospt)
 	}
+	logger.Logger.Info(request.Header.Get("Authorization"))
 	// 发送请求
 	response, err := freeChat.RequestClient.Do(request)
 	if err != nil {
@@ -134,7 +135,7 @@ func __CompletionsStream(c *gin.Context, apiReq *reqModel.ApiReq, resp *fhttp.Re
 			c.SSEvent(name, " [DONE]")
 			return
 		}
-		chatResp35 := &respModel.ChatResp35{}
+		chatResp35 := &respModel.ChatResp{}
 		err = json.Unmarshal([]byte(data), chatResp35)
 		if chatResp35.Error != nil && !handlingSigns {
 			logger.Logger.Error(fmt.Sprint(chatResp35.Error))
@@ -206,7 +207,7 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqModel.ApiReq, resp *fhttp.
 			c.JSON(http.StatusOK, apiRespObj)
 			return
 		}
-		chatResp35 := &respModel.ChatResp35{}
+		chatResp35 := &respModel.ChatResp{}
 		err = json.Unmarshal([]byte(data), chatResp35)
 		if chatResp35.Error != nil && !handlingSigns {
 			logger.Logger.Error(fmt.Sprint(chatResp35.Error))
@@ -242,7 +243,7 @@ func __CompletionsNoStream(c *gin.Context, apiReq *reqModel.ApiReq, resp *fhttp.
 	}
 }
 
-func contentIsBlocked(chatResp35 *respModel.ChatResp35) bool {
+func contentIsBlocked(chatResp35 *respModel.ChatResp) bool {
 	if !chatResp35.IsCompletion && chatResp35.ModerationResponse.Blocked {
 		return true
 	}

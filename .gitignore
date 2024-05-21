@@ -183,3 +183,4 @@ fabric.properties
 /.env
 /target/
 /CHANGELOG.md
+/temp.json

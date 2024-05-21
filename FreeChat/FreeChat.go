@@ -113,6 +113,9 @@ func (FG *FreeChat) NewRequest(method, url string, body io.Reader) (*fhttp.Reque
 	if err != nil {
 		return nil, err
 	}
+	if FG.AccAuth != "" {
+		request.Header.Set("Authorization", FG.AccAuth)
+	}
 	request.Header.Set("accept", "*/*")
 	request.Header.Set("accept-language", "zh-CN,zh;q=0.9,zh-Hans;q=0.8,en;q=0.7")
 	for _, cookie := range FG.Cookies {
