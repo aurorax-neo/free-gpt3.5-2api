@@ -18,7 +18,7 @@ type ChatConversationMode struct {
 	Kind string `json:"kind"`
 }
 
-type ChatReq35 struct {
+type ChatReq struct {
 	Action                     string               `json:"action"`
 	Messages                   []ChatMessages       `json:"messages"`
 	ParentMessageId            string               `json:"parent_message_id"`

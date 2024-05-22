@@ -1,4 +1,4 @@
-package FreeGpt35
+package FreeChat
 
 import (
 	"encoding/json"
@@ -13,12 +13,14 @@ import (
 	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/google/uuid"
 	"io"
+	"strings"
 )
 
 var (
 	BaseUrl          = config.BaseUrl
-	ChatUrl          = BaseUrl + "/backend-anon/conversation"
-	AuthUrl          = BaseUrl + "/backend-anon/sentinel/chat-requirements"
+	FreeAuthUrl      = BaseUrl + "/backend-anon/sentinel/chat-requirements"
+	FreeAuthChatUrl  = BaseUrl + "/backend-anon/conversation"
+	AccAuthChatUrl   = BaseUrl + "/backend-api/conversation"
 	OfficialBaseURLS = []string{"https://chat.openai.com", "https://chatgpt.com"}
 )
 
@@ -30,12 +32,14 @@ const (
 	NewFreeAuthRefresh NewFreeAuthType = 1 // 刷新获取
 )
 
-type FreeGpt35 struct {
+type FreeChat struct {
 	RequestClient RequestClient.RequestClient
 	Proxy         *ProxyPool.Proxy
 	MaxUseCount   int
 	ExpiresAt     int64
 	FreeAuth      *freeAuth
+	AccAuth       string
+	ChatUrl       string
 	Ua            string
 	Cookies       []*fhttp.Cookie
 }
@@ -47,6 +51,7 @@ type freeAuth struct {
 	Turnstile   turnstile            `json:"turnstile"`
 	ProofWork   ProofWork2.ProofWork `json:"proofofwork"`
 	Token       string               `json:"token"`
+	ForceLogin  bool                 `json:"force_login"`
 }
 
 type arkose struct {
@@ -58,48 +63,58 @@ type turnstile struct {
 	Required bool `json:"required"`
 }
 
-// NewFreeGpt35 创建 FreeGpt35 实例 0 无论网络是否被标记限制都获取 1 在网络未标记时才能获取
-func NewFreeGpt35(newType NewFreeAuthType, maxUseCount int, expiresAt int64) *FreeGpt35 {
-	// 创建 FreeGpt35 实例
-	freeGpt35 := &FreeGpt35{
+// NewFreeChat 创建 FreeChat 实例 0 无论网络是否被标记限制都获取 1 在网络未标记时才能获取
+func NewFreeChat(newType NewFreeAuthType, maxUseCount int, expiresAt int64, accAuth string) *FreeChat {
+	// 创建 FreeChat 实例
+	freeChat := &FreeChat{
 		MaxUseCount: maxUseCount,
 		ExpiresAt:   expiresAt,
 		FreeAuth:    &freeAuth{},
 		Ua:          constant.Ua,
 	}
+	// ChatUrl
+	if strings.HasPrefix(accAuth, "Bearer eyJhbGciOiJSUzI1NiI") {
+		freeChat.ChatUrl = AccAuthChatUrl
+		freeChat.AccAuth = accAuth
+	} else {
+		freeChat.ChatUrl = FreeAuthChatUrl
+	}
 	// 获取请求客户端
-	err := freeGpt35.newRequestClient()
+	err := freeChat.newRequestClient()
 	if err != nil {
 		logger.Logger.Debug(err.Error())
 		return nil
 	}
 	// 获取并设置代理
-	err = freeGpt35.getProxy(newType)
+	err = freeChat.getProxy(newType)
 	if err != nil {
 		logger.Logger.Debug(err.Error())
 		return nil
 	}
 	// 获取cookies
 	if common.IsStrInArray(BaseUrl, OfficialBaseURLS) {
-		err = freeGpt35.getCookies()
+		err = freeChat.getCookies()
 		if err != nil {
 			logger.Logger.Debug(err.Error())
 			return nil
 		}
 	}
 	// 获取 FreeAuth
-	err = freeGpt35.newFreeAuth(newType)
+	err = freeChat.newFreeAuth(newType)
 	if err != nil {
 		logger.Logger.Debug(err.Error())
 		return nil
 	}
-	return freeGpt35
+	return freeChat
 }
 
-func (FG *FreeGpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Request, error) {
+func (FG *FreeChat) NewRequest(method, url string, body io.Reader) (*fhttp.Request, error) {
 	request, err := RequestClient.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
+	}
+	if FG.AccAuth != "" {
+		request.Header.Set("Authorization", FG.AccAuth)
 	}
 	request.Header.Set("accept", "*/*")
 	request.Header.Set("accept-language", "zh-CN,zh;q=0.9,zh-Hans;q=0.8,en;q=0.7")
@@ -120,7 +135,7 @@ func (FG *FreeGpt35) NewRequest(method, url string, body io.Reader) (*fhttp.Requ
 	return request, nil
 }
 
-func (FG *FreeGpt35) newRequestClient() error {
+func (FG *FreeChat) newRequestClient() error {
 	// 请求客户端
 	FG.RequestClient = RequestClient.NewTlsClient(300, constant.ClientProfile)
 	if FG.RequestClient == nil {
@@ -131,7 +146,7 @@ func (FG *FreeGpt35) newRequestClient() error {
 	return nil
 }
 
-func (FG *FreeGpt35) getProxy(newFreeAuthType NewFreeAuthType) error {
+func (FG *FreeChat) getProxy(newFreeAuthType NewFreeAuthType) error {
 	// 获取代理池
 	ProxyPoolInstance := ProxyPool.GetProxyPoolInstance()
 	// 获取代理
@@ -152,7 +167,7 @@ func (FG *FreeGpt35) getProxy(newFreeAuthType NewFreeAuthType) error {
 	return nil
 }
 
-func (FG *FreeGpt35) getCookies() error {
+func (FG *FreeChat) getCookies() error {
 	// 获取cookies
 	request, err := FG.NewRequest("GET", fmt.Sprint(BaseUrl, "/?oai-dm=1"), nil)
 	if err != nil {
@@ -160,6 +175,9 @@ func (FG *FreeGpt35) getCookies() error {
 	}
 	// 设置请求头
 	request.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+	if FG.AccAuth != "" {
+		request.Header.Set("Authorization", FG.AccAuth)
+	}
 	// 发送 GET 请求
 	response, err := FG.RequestClient.Do(request)
 	if err != nil {
@@ -187,13 +205,13 @@ func (FG *FreeGpt35) getCookies() error {
 	return nil
 }
 
-func (FG *FreeGpt35) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
+func (FG *FreeChat) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
 	// 生成新的设备 ID
 	if FG.FreeAuth.OaiDeviceId == "" {
 		FG.FreeAuth.OaiDeviceId = uuid.New().String()
 	}
 	// 创建请求
-	request, err := FG.NewRequest("POST", AuthUrl, nil)
+	request, err := FG.NewRequest("POST", FreeAuthUrl, nil)
 	if err != nil {
 		return err
 	}
@@ -223,6 +241,14 @@ func (FG *FreeGpt35) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
 	if err := json.NewDecoder(response.Body).Decode(&FG.FreeAuth); err != nil {
 		return err
 	}
+	if FG.FreeAuth.ForceLogin {
+		errStr := fmt.Sprint("ForceLogin: ", FG.FreeAuth.ForceLogin)
+		return fmt.Errorf(errStr)
+	}
+	if strings.HasPrefix(FG.FreeAuth.ProofWork.Difficulty, "00003") {
+		errStr := fmt.Sprint("Too Difficulty: ", FG.FreeAuth.ProofWork.Difficulty)
+		return fmt.Errorf(errStr)
+	}
 	// ProofWork
 	if FG.FreeAuth.ProofWork.Required {
 		FG.FreeAuth.ProofWork.Ospt = ProofWork2.CalcProofToken(FG.FreeAuth.ProofWork.Seed, FG.FreeAuth.ProofWork.Difficulty, request.Header.Get("User-Agent"))
@@ -230,8 +256,8 @@ func (FG *FreeGpt35) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
 	return nil
 }
 
-// SubFreeGpt35MaxUseCount 减少 FreeGpt35 实例的最大使用次数
-func (FG *FreeGpt35) SubFreeGpt35MaxUseCount() *FreeGpt35 {
+// SubFreeChatMaxUseCount 减少 FreeChat 实例的最大使用次数
+func (FG *FreeChat) SubFreeChatMaxUseCount() *FreeChat {
 	FG.MaxUseCount--
 	return FG
 }

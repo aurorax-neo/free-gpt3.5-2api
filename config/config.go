@@ -1,6 +1,7 @@
 package config
 
 import (
+	"free-gpt3.5-2api/AccAuthPool"
 	"free-gpt3.5-2api/common"
 	"github.com/joho/godotenv"
 	"os"
@@ -12,6 +13,7 @@ var (
 	Bind           string
 	Port           string
 	Proxy          []string
+	ACCESS_TOKENS  []string
 	AUTHORIZATIONS []string
 	BaseUrl        string
 	PoolMaxCount   int
@@ -35,13 +37,21 @@ func init() {
 	if proxy != "" {
 		Proxy = strings.Split(proxy, ",")
 	}
+	// ACCESS_TOKEN
+	accessTokens := os.Getenv("ACCESS_TOKENS")
+	if accessTokens == "" {
+		ACCESS_TOKENS = []string{}
+	} else {
+		ACCESS_TOKENS = common.SplitAndAddPre("Bearer ", accessTokens, ",")
+	}
+	AccAuthPool.GetAccAuthPoolInstance().AppendAccAuths(ACCESS_TOKENS)
 	// AUTH_TOKEN
 	authorizations := os.Getenv("AUTHORIZATIONS")
 	if authorizations == "" {
 		AUTHORIZATIONS = []string{}
 	} else {
 		//以,分割 AUTH_TOKEN 并且为每个AUTH_TOKEN前面加上Bearer
-		AUTHORIZATIONS = common.SplitAndAddBearer(authorizations)
+		AUTHORIZATIONS = common.SplitAndAddPre("Bearer ", authorizations, ",")
 	}
 	// BASE_URL
 	BaseUrl = os.Getenv("BASE_URL")

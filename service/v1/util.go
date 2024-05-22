@@ -15,13 +15,10 @@ func MappingModel(model string) string {
 		"gpt-3.5-turbo-0613":     "text-davinci-002-render-sha",
 		"gpt-3.5-turbo-1106":     "text-davinci-002-render-sha",
 	}
-	if model == "" {
-		return "text-davinci-002-render-sha"
-	}
 	if v, ok := modelMapping[model]; ok {
 		return v
 	}
-	return "text-davinci-002-render-sha"
+	return model
 }
 
 func GenerateID(length int) string {
@@ -33,7 +30,7 @@ func GenerateID(length int) string {
 	return id
 }
 
-func ApiReq2ChatReq35(apiReq *reqModel.ApiReq) (chatReq *reqModel.ChatReq35) {
+func ApiReq2ChatReq35(apiReq *reqModel.ApiReq) (chatReq *reqModel.ChatReq) {
 	messages := make([]reqModel.ChatMessages, 0)
 	for _, apiMessage := range apiReq.Messages {
 		chatMessage := reqModel.ChatMessages{
@@ -48,7 +45,7 @@ func ApiReq2ChatReq35(apiReq *reqModel.ApiReq) (chatReq *reqModel.ChatReq35) {
 		messages = append(messages, chatMessage)
 	}
 
-	chatReq = &reqModel.ChatReq35{
+	chatReq = &reqModel.ChatReq{
 		Action:                     "next",
 		Messages:                   messages,
 		ParentMessageId:            uuid.New().String(),
