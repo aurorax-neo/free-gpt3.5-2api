@@ -87,7 +87,6 @@ func Completions(c *gin.Context) {
 	if freeChat.FreeAuth.ProofWork.Required {
 		request.Header.Set("Openai-Sentinel-Proof-Token", freeChat.FreeAuth.ProofWork.Ospt)
 	}
-	logger.Logger.Info(request.Header.Get("Authorization"))
 	// 发送请求
 	response, err := freeChat.RequestClient.Do(request)
 	if err != nil {
