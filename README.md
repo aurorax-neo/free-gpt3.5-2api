@@ -121,3 +121,11 @@ curl --location --request POST 'http://127.0.0.1:9846/v1/chat/completions' \
     "stream": false
 }'
 ```
+
+## 参考项目
+
+- https://github.com/aurora-develop/aurora
+
+- https://github.com/xqdoo00o/ChatGPT-to-API
+
+
