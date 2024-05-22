@@ -1,25 +1,34 @@
 package respModel
 
-import "time"
+import (
+	v1 "free-gpt3.5-2api/service/v1"
+	"time"
+)
 
 type ApiRespJson struct {
-	ID      string              `json:"id"`
-	Object  string              `json:"object"`
-	Created int64               `json:"created"`
-	Model   string              `json:"model"`
-	Usage   ApiRespJsonUsage    `json:"usage"`
-	Choices []ApiRespJsonChoice `json:"choices"`
+	ID      string              `json:"id,omitempty"`
+	Object  string              `json:"object,omitempty"`
+	Created int64               `json:"created,omitempty"`
+	Model   string              `json:"model,omitempty"`
+	Usage   ApiRespJsonUsage    `json:"usage,omitempty"`
+	Choices []ApiRespJsonChoice `json:"choices,omitempty"`
 }
 
 type ApiRespJsonMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role    string `json:"role,omitempty"`
+	Content string `json:"content,omitempty"`
 }
 
 type ApiRespJsonChoice struct {
-	Message      ApiRespJsonMessage `json:"message"`
-	FinishReason string             `json:"finish_reason"`
-	Index        int                `json:"index"`
+	Delta        ApiRespJsonChoiceDelta `json:"delta,omitempty"`
+	Message      ApiRespJsonMessage     `json:"message,omitempty"`
+	FinishReason string                 `json:"finish_reason,omitempty"`
+	Index        int                    `json:"index,omitempty"`
+}
+
+type ApiRespJsonChoiceDelta struct {
+	Content string `json:"content,omitempty"`
+	Role    string `json:"role,omitempty"`
 }
 
 type ApiRespJsonUsage struct {
@@ -28,9 +37,9 @@ type ApiRespJsonUsage struct {
 	TotalTokens      int `json:"total_tokens"`
 }
 
-func NewApiRespJson(id string, model string, content string) *ApiRespJson {
+func NewApiRespJson(model string, content string) *ApiRespJson {
 	apiRespObj := &ApiRespJson{
-		ID:      id,
+		ID:      v1.GenerateID(29),
 		Created: time.Now().Unix(),
 		Object:  "chat.completion",
 		Model:   model,
