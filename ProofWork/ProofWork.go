@@ -52,5 +52,5 @@ func CalcProofToken(seed string, diff string, userAgent string) string {
 			return "gAAAAAB" + base
 		}
 	}
-	return "gAAAAABwQ8Lk5FbGpA2NcR9dShT6gYjU7VxZ4D" + base64.StdEncoding.EncodeToString([]byte(`"`+seed+`"`))
+	return ""
 }
