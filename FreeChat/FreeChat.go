@@ -1,6 +1,7 @@
 package FreeChat
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	ProofWork2 "free-gpt3.5-2api/ProofWork"
@@ -8,7 +9,6 @@ import (
 	"free-gpt3.5-2api/RequestClient"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
-	"free-gpt3.5-2api/constant"
 	"github.com/aurorax-neo/go-logger"
 	fhttp "github.com/bogdanfinn/fhttp"
 	"github.com/google/uuid"
@@ -70,7 +70,7 @@ func NewFreeChat(newType NewFreeAuthType, maxUseCount int, expiresAt int64, accA
 		MaxUseCount: maxUseCount,
 		ExpiresAt:   expiresAt,
 		FreeAuth:    &freeAuth{},
-		Ua:          constant.Ua,
+		Ua:          RequestClient.Ua,
 	}
 	// ChatUrl
 	if strings.HasPrefix(accAuth, "Bearer eyJhbGciOiJSUzI1NiI") {
@@ -137,7 +137,7 @@ func (FG *FreeChat) NewRequest(method, url string, body io.Reader) (*fhttp.Reque
 
 func (FG *FreeChat) newRequestClient() error {
 	// 请求客户端
-	FG.RequestClient = RequestClient.NewTlsClient(300, constant.ClientProfile)
+	FG.RequestClient = RequestClient.NewTlsClient(300, RequestClient.GetClientProfile())
 	if FG.RequestClient == nil {
 		errStr := fmt.Sprint("RequestClient is nil")
 		logger.Logger.Debug(errStr)
@@ -210,8 +210,10 @@ func (FG *FreeChat) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
 	if FG.FreeAuth.OaiDeviceId == "" {
 		FG.FreeAuth.OaiDeviceId = uuid.New().String()
 	}
+	// 请求体
+	body := bytes.NewBufferString(`{"p":"gAAAAACWzI0MTIsIlRodSBNYXkgMjMgMjAyNCAxNjozNjoyNyBHTVQrMDgwMCAoR01UKzA4OjAwKSIsNDI5NDcwNTE1MiwwLCJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvMTIyLjAuMC4wIFNhZmFyaS81MzcuMzYiLCJodHRwczovL2Nkbi5vYWlzdGF0aWMuY29tL19uZXh0L3N0YXRpYy9jaHVua3Mvd2VicGFjay01YzQ4NDI4ZTBlZTgxMTBlLmpzP2RwbD00ODExZmQxYzk0YjU1MGM4ZjAzZmNjODYzZWU2YzFhOTk5NDBlZmM1IiwiZHBsPTQ4MTFmZDFjOTRiNTUwYzhmMDNmY2M4NjNlZTZjMWE5OTk0MGVmYzUiLCJ6aC1DTiIsInpoLUNOLHpoLHpoLUhhbnMsZW4iLDIzNiwiZGV2aWNlTWVtb3J54oiSOCIsIl9yZWFjdExpc3RlbmluZzh6MmcweHF4M2Z4IiwiX19SRUFDVF9JTlRMX0NPTlRFWFRfXyIsNzIzLjM5OTk5OTk5ODUwOTld"}`)
 	// 创建请求
-	request, err := FG.NewRequest("POST", FreeAuthUrl, nil)
+	request, err := FG.NewRequest("POST", FreeAuthUrl, body)
 	if err != nil {
 		return err
 	}
@@ -242,6 +244,7 @@ func (FG *FreeChat) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
 		return err
 	}
 	if FG.FreeAuth.ForceLogin {
+		RequestClient.SubMaxForceLogin()
 		errStr := fmt.Sprint("ForceLogin: ", FG.FreeAuth.ForceLogin)
 		return fmt.Errorf(errStr)
 	}
@@ -252,6 +255,10 @@ func (FG *FreeChat) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
 	// ProofWork
 	if FG.FreeAuth.ProofWork.Required {
 		FG.FreeAuth.ProofWork.Ospt = ProofWork2.CalcProofToken(FG.FreeAuth.ProofWork.Seed, FG.FreeAuth.ProofWork.Difficulty, request.Header.Get("User-Agent"))
+		if FG.FreeAuth.ProofWork.Ospt == "" {
+			errStr := fmt.Sprint("ProofWork Failed")
+			return fmt.Errorf(errStr)
+		}
 	}
 	return nil
 }
