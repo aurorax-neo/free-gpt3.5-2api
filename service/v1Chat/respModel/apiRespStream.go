@@ -65,7 +65,7 @@ func StopChunk(id string, model string, finishReason string) ApiRespStream {
 	return ApiRespStream{
 		ID:      id,
 		Object:  "chat.completion.chunk",
-		Created: 0,
+		Created: time.Now().Unix(),
 		Model:   model,
 		Choices: []ApiStreamChoice{
 			{
