@@ -24,7 +24,7 @@ PROXY=            # http://127.0.0.1:7890,http://127.0.0.1:7890 已支持多个�
 AUTHORIZATIONS=   # abc,bac (英文 "," 分隔)
 BASE_URL=         # 默认：https://chat.openai.com
 POOL_MAX_COUNT=64 # max number of connections to keep in the pool 默认：64
-AUTH_ED=600       # expiration time for the authorization in seconds 默认：600
+AUTH_ED=60       # expiration time for the authorization in seconds 默认：60
 ```
 
 ###### 也可使用与程序同目录下 `.env` 文件配置上述字段
@@ -127,5 +127,3 @@ curl --location --request POST 'http://127.0.0.1:9846/v1/chat/completions' \
 - https://github.com/aurora-develop/aurora
 
 - https://github.com/xqdoo00o/ChatGPT-to-API
-
-

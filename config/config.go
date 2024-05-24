@@ -74,7 +74,7 @@ func init() {
 	// AUTH_ED
 	authED := os.Getenv("AUTH_ED")
 	if authED == "" {
-		AuthED = 600
+		AuthED = 60
 	} else {
 		AuthED, err = strconv.Atoi(authED)
 		if err != nil {
