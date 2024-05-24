@@ -23,8 +23,6 @@ ACCESS_TOKENS=    # 账号token池（eyJhbGci****，eyJhbGci****）
 PROXY=            # http://127.0.0.1:7890,http://127.0.0.1:7890 已支持多个代理（英文 "," 分隔）
 AUTHORIZATIONS=   # abc,bac (英文 "," 分隔)
 BASE_URL=         # 默认：https://chat.openai.com
-POOL_MAX_COUNT=64 # max number of connections to keep in the pool 默认：64
-AUTH_ED=60       # expiration time for the authorization in seconds 默认：60
 ```
 
 ###### 也可使用与程序同目录下 `.env` 文件配置上述字段
@@ -61,22 +59,7 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtow
 
 ## 四、接口
 
-#### 1./v1/tokens
-
-```
-curl --location --request GET 'http://127.0.0.1:9846/v1/tokens' \
---header 'Authorization: Bearer abc'
-```
-
-返回示例说明：`count`为授权池中可用授权数，如果`count` 为 `0`请检查`ip`是否支持 `openai`
-
-```
-{
-    "count": 0
-}
-```
-
-#### 2./v1/accTokens
+#### 1./v1/accTokens
 
 ```
 curl --location --request GET 'http://127.0.0.1:9846/v1/accTokens' \
@@ -92,7 +75,7 @@ curl --location --request GET 'http://127.0.0.1:9846/v1/accTokens' \
 }
 ```
 
-#### 3./v1/chat/completions
+#### 2./v1/chat/completions
 
 ###### 支持返回stream和json
 

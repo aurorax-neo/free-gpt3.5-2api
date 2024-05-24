@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"free-gpt3.5-2api/FreeChatPool"
 	"free-gpt3.5-2api/ProxyPool"
 	"free-gpt3.5-2api/config"
 	"free-gpt3.5-2api/router"
@@ -12,7 +11,6 @@ import (
 
 func Init() {
 	ProxyPool.GetProxyPoolInstance()
-	FreeChatPool.GetFreeChatPoolInstance()
 }
 
 func main() {

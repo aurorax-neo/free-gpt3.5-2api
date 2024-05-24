@@ -8,7 +8,6 @@ import (
 	fhttp "github.com/bogdanfinn/fhttp"
 	"net/url"
 	"sync"
-	"time"
 )
 
 var (
@@ -22,36 +21,27 @@ type ProxyPool struct {
 }
 
 type Proxy struct {
-	Link     *url.URL
-	CanUseAt int64
-	Cookies  []*fhttp.Cookie
+	Link    *url.URL
+	Cookies []*fhttp.Cookie
 }
 
 func GetProxyPoolInstance() *ProxyPool {
 	Once.Do(func() {
-		logger.Logger.Info(fmt.Sprint("Init ProxyPool..."))
+		logger.Logger.Debug(fmt.Sprint("Init ProxyPool..."))
 		// 初始化 ProxyPool
 		Instance = NewProxyPool(nil)
 		// 遍历配置文件中的代理 添加到代理池
 		for _, px := range config.Proxy {
-			proxy := NewProxy(px, common.GetTimestampSecond(0))
-			_ = proxy.getCookies()
+			proxy := NewProxy(px)
 			Instance.AddProxy(proxy)
 		}
-		//定时刷新代理cookies
-		common.AsyncLoopTask(1*time.Minute, func() {
-			for _, proxy := range Instance.Proxies {
-				_ = proxy.getCookies()
-			}
-		})
-		logger.Logger.Info(fmt.Sprint("Init ProxyPool Success"))
+		logger.Logger.Debug(fmt.Sprint("Init ProxyPool Success"))
 	})
 	return Instance
 }
 
 func NewProxyPool(proxies []*Proxy) *ProxyPool {
-	proxy := NewProxy("", common.GetTimestampSecond(0))
-	_ = proxy.getCookies()
+	proxy := NewProxy("")
 	return &ProxyPool{
 		Proxies: append([]*Proxy{proxy}, proxies...),
 		Index:   0,
@@ -72,13 +62,8 @@ func (PP *ProxyPool) AddProxy(proxy *Proxy) {
 	PP.Proxies = append(PP.Proxies, proxy)
 }
 
-func NewProxy(link string, cannotUseTime int64) *Proxy {
+func NewProxy(link string) *Proxy {
 	return &Proxy{
-		Link:     common.ParseUrl(link),
-		CanUseAt: cannotUseTime,
+		Link: common.ParseUrl(link),
 	}
-}
-
-func (P *Proxy) getCookies() error {
-	return nil
 }
