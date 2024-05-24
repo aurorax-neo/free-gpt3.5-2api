@@ -1,18 +1,17 @@
 package RequestClient
 
 import (
+	"free-gpt3.5-2api/constant"
 	browser "github.com/EDDYCJY/fake-useragent"
 	"github.com/bogdanfinn/tls-client/profiles"
 	"math/rand"
 	"time"
 )
 
-const maxForceLogin = 5
-
 var (
-	ClientProfile = randomClientProfile()
-	Ua            = browser.Random()
-	MaxForceLogin = maxForceLogin
+	clientProfile = randomClientProfile()
+	ua            = browser.Random()
+	maxForceLogin = constant.ReTry
 )
 
 func randomClientProfile() profiles.ClientProfile {
@@ -31,15 +30,18 @@ func randomClientProfile() profiles.ClientProfile {
 }
 
 func SubMaxForceLogin() {
-	MaxForceLogin--
+	maxForceLogin--
+	if maxForceLogin < 0 {
+		clientProfile = randomClientProfile()
+		ua = browser.Random()
+		maxForceLogin = constant.ReTry
+	}
 }
 
 func GetClientProfile() profiles.ClientProfile {
-	if MaxForceLogin > 0 {
-		return ClientProfile
-	}
-	ClientProfile = randomClientProfile()
-	Ua = browser.Random()
-	MaxForceLogin = maxForceLogin
-	return ClientProfile
+	return clientProfile
+}
+
+func GetUa() string {
+	return ua
 }

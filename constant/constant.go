@@ -2,4 +2,6 @@ package constant
 
 var ()
 
-const ()
+const (
+	ReTry = 5
+)

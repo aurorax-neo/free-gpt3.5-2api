@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"free-gpt3.5-2api/AccAuthPool"
 	ProofWork2 "free-gpt3.5-2api/ProofWork"
 	"free-gpt3.5-2api/ProxyPool"
 	"free-gpt3.5-2api/RequestClient"
@@ -27,16 +28,9 @@ var (
 // NewFreeAuthType 定义一个枚举类型
 type NewFreeAuthType int
 
-const (
-	NewFreeAuthNormal  NewFreeAuthType = 0 //正常获取
-	NewFreeAuthRefresh NewFreeAuthType = 1 // 刷新获取
-)
-
 type FreeChat struct {
 	RequestClient RequestClient.RequestClient
 	Proxy         *ProxyPool.Proxy
-	MaxUseCount   int
-	ExpiresAt     int64
 	FreeAuth      *freeAuth
 	AccAuth       string
 	ChatUrl       string
@@ -64,20 +58,17 @@ type turnstile struct {
 }
 
 // NewFreeChat 创建 FreeChat 实例 0 无论网络是否被标记限制都获取 1 在网络未标记时才能获取
-func NewFreeChat(newType NewFreeAuthType, maxUseCount int, expiresAt int64, accAuth string) *FreeChat {
+func NewFreeChat(accAuth string) *FreeChat {
 	// 创建 FreeChat 实例
 	freeChat := &FreeChat{
-		MaxUseCount: maxUseCount,
-		ExpiresAt:   expiresAt,
-		FreeAuth:    &freeAuth{},
-		Ua:          RequestClient.Ua,
+		FreeAuth: &freeAuth{},
+		Ua:       RequestClient.GetUa(),
+		ChatUrl:  FreeAuthChatUrl,
 	}
 	// ChatUrl
 	if strings.HasPrefix(accAuth, "Bearer eyJhbGciOiJSUzI1NiI") {
 		freeChat.ChatUrl = AccAuthChatUrl
 		freeChat.AccAuth = accAuth
-	} else {
-		freeChat.ChatUrl = FreeAuthChatUrl
 	}
 	// 获取请求客户端
 	err := freeChat.newRequestClient()
@@ -86,7 +77,7 @@ func NewFreeChat(newType NewFreeAuthType, maxUseCount int, expiresAt int64, accA
 		return nil
 	}
 	// 获取并设置代理
-	err = freeChat.getProxy(newType)
+	err = freeChat.getProxy()
 	if err != nil {
 		logger.Logger.Debug(err.Error())
 		return nil
@@ -100,7 +91,7 @@ func NewFreeChat(newType NewFreeAuthType, maxUseCount int, expiresAt int64, accA
 		}
 	}
 	// 获取 FreeAuth
-	err = freeChat.newFreeAuth(newType)
+	err = freeChat.newFreeAuth()
 	if err != nil {
 		logger.Logger.Debug(err.Error())
 		return nil
@@ -108,6 +99,31 @@ func NewFreeChat(newType NewFreeAuthType, maxUseCount int, expiresAt int64, accA
 	return freeChat
 }
 
+func GetFreeChat(accAuth string, retry int) *FreeChat {
+	// 判断是否为指定账号
+	if strings.HasPrefix(accAuth, "Bearer eyJhbGciOiJSUzI1NiI") {
+		freeChat := NewFreeChat(accAuth)
+		if freeChat == nil && retry > 0 {
+			return GetFreeChat(accAuth, retry-1)
+		}
+		return freeChat
+	}
+	// 判断是否使用 AccAuthPool
+	if strings.HasPrefix(accAuth, "Bearer "+AccAuthPool.AccAuthAuthorizationPre) && !AccAuthPool.GetAccAuthPoolInstance().IsEmpty() {
+		accA := AccAuthPool.GetAccAuthPoolInstance().GetAccAuth()
+		freeChat := NewFreeChat(accA)
+		if freeChat == nil && retry > 0 {
+			return GetFreeChat(accAuth, retry-1)
+		}
+		return freeChat
+	}
+	// 返回免登 FreeChat 实例
+	freeChat := NewFreeChat("")
+	if freeChat == nil && retry > 0 {
+		return GetFreeChat(accAuth, retry-1)
+	}
+	return freeChat
+}
 func (FG *FreeChat) NewRequest(method, url string, body io.Reader) (*fhttp.Request, error) {
 	request, err := RequestClient.NewRequest(method, url, body)
 	if err != nil {
@@ -146,16 +162,11 @@ func (FG *FreeChat) newRequestClient() error {
 	return nil
 }
 
-func (FG *FreeChat) getProxy(newFreeAuthType NewFreeAuthType) error {
+func (FG *FreeChat) getProxy() error {
 	// 获取代理池
 	ProxyPoolInstance := ProxyPool.GetProxyPoolInstance()
 	// 获取代理
 	FG.Proxy = ProxyPoolInstance.GetProxy()
-	// 判断代理是否可用
-	if FG.Proxy.CanUseAt > common.GetTimestampSecond(0) && newFreeAuthType == NewFreeAuthRefresh {
-		errStr := fmt.Sprint(FG.Proxy.Link, ": Proxy restricted, Reuse at ", FG.Proxy.CanUseAt)
-		return fmt.Errorf(errStr)
-	}
 	// 补全cookies
 	FG.Cookies = append(FG.Cookies, FG.Proxy.Cookies...)
 	// 设置代理
@@ -205,7 +216,7 @@ func (FG *FreeChat) getCookies() error {
 	return nil
 }
 
-func (FG *FreeChat) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
+func (FG *FreeChat) newFreeAuth() error {
 	// 生成新的设备 ID
 	if FG.FreeAuth.OaiDeviceId == "" {
 		FG.FreeAuth.OaiDeviceId = uuid.New().String()
@@ -227,15 +238,7 @@ func (FG *FreeChat) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
 	}
 	if response.StatusCode != 200 {
 		logger.Logger.Debug(fmt.Sprint("newFreeAuth: StatusCode: ", response.StatusCode))
-		if (response.StatusCode == 429 || response.StatusCode == 403) && newFreeAuthType == NewFreeAuthRefresh {
-			FG.Proxy.CanUseAt = common.GetTimestampSecond(300)
-			logger.Logger.Debug(fmt.Sprint("newFreeAuth: Proxy(", FG.Proxy.Link, ")restricted, Reuse at ", FG.Proxy.CanUseAt))
-		}
 		return fmt.Errorf("StatusCode: %d", response.StatusCode)
-	} else if newFreeAuthType == 0 {
-		// 成功后更新代理的可用时间
-		FG.Proxy.CanUseAt = common.GetTimestampSecond(0)
-		logger.Logger.Debug(fmt.Sprint("newFreeAuth: Proxy(", FG.Proxy.Link, ")Reuse at ", FG.Proxy.CanUseAt))
 	}
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
@@ -261,10 +264,4 @@ func (FG *FreeChat) newFreeAuth(newFreeAuthType NewFreeAuthType) error {
 		}
 	}
 	return nil
-}
-
-// SubFreeChatMaxUseCount 减少 FreeChat 实例的最大使用次数
-func (FG *FreeChat) SubFreeChatMaxUseCount() *FreeChat {
-	FG.MaxUseCount--
-	return FG
 }

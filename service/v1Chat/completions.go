@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"free-gpt3.5-2api/AccAuthPool"
 	"free-gpt3.5-2api/FreeChat"
-	"free-gpt3.5-2api/FreeChatPool"
+	"free-gpt3.5-2api/constant"
 	"free-gpt3.5-2api/typings"
 	"github.com/gorilla/websocket"
 	"net/url"
@@ -55,7 +55,7 @@ func Completions(c *gin.Context) {
 
 	}
 	authToken := c.Request.Header.Get("Authorization")
-	freeChat := FreeChatPool.GetFreeChatPoolInstance().GetFreeChat(authToken, 3)
+	freeChat := FreeChat.GetFreeChat(authToken, constant.ReTry)
 	if freeChat == nil {
 		errStr := "please restart the program、change the IP address、use a proxy to try again."
 		logger.Logger.Error(errStr)
