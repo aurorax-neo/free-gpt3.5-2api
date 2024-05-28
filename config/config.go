@@ -3,25 +3,52 @@ package config
 import (
 	"free-gpt3.5-2api/AccAuthPool"
 	"free-gpt3.5-2api/common"
+	"github.com/donnie4w/go-logger/logger"
 	"github.com/joho/godotenv"
 	"os"
-	"strconv"
 	"strings"
 )
 
 var (
+	LogLevel       string
+	LogPath        string
+	LogFile        string
 	Bind           string
 	Port           string
 	Proxy          []string
-	ACCESS_TOKENS  []string
+	AccessTokens   []string
 	AUTHORIZATIONS []string
 	BaseUrl        string
-	PoolMaxCount   int
-	AuthED         int
 )
 
 func init() {
 	_ = godotenv.Load()
+	// LOG_LEVEL
+	LogLevel = os.Getenv("LOG_LEVEL")
+	if LogLevel == "" {
+		LogLevel = "INFO"
+	}
+	switch LogLevel {
+	case "DEBUG":
+		_ = logger.SetLevel(logger.LEVEL_DEBUG)
+	case "INFO":
+		_ = logger.SetLevel(logger.LEVEL_INFO)
+	case "WARN":
+		_ = logger.SetLevel(logger.LEVEL_WARN)
+	case "ERROR":
+		_ = logger.SetLevel(logger.LEVEL_ERROR)
+	case "FATAL":
+		_ = logger.SetLevel(logger.LEVEL_FATAL)
+	default:
+		_ = logger.SetLevel(logger.LEVEL_INFO)
+	}
+
+	// LOG_PATH
+	LogPath = os.Getenv("LOG_PATH")
+
+	// LOG_FILE
+	LogFile = os.Getenv("LOG_FILE")
+	_, _ = logger.SetRollingDaily(LogPath, LogFile)
 	// Bind
 	Bind = os.Getenv("BIND")
 	if Bind == "" {
@@ -40,11 +67,11 @@ func init() {
 	// ACCESS_TOKEN
 	accessTokens := os.Getenv("ACCESS_TOKENS")
 	if accessTokens == "" {
-		ACCESS_TOKENS = []string{}
+		AccessTokens = []string{}
 	} else {
-		ACCESS_TOKENS = common.SplitAndAddPre("Bearer ", accessTokens, ",")
+		AccessTokens = common.SplitAndAddPre("Bearer ", accessTokens, ",")
 	}
-	AccAuthPool.GetAccAuthPoolInstance().AppendAccAuths(ACCESS_TOKENS)
+	AccAuthPool.GetAccAuthPoolInstance().AppendAccAuths(AccessTokens)
 	// AUTH_TOKEN
 	authorizations := os.Getenv("AUTHORIZATIONS")
 	if authorizations == "" {
@@ -59,26 +86,5 @@ func init() {
 		BaseUrl = "https://chatgpt.com"
 	} else {
 		BaseUrl = strings.TrimRight(BaseUrl, "/")
-	}
-	// POOL_MAX_COUNT
-	poolMaxCount := os.Getenv("POOL_MAX_COUNT")
-	var err error
-	if poolMaxCount == "" {
-		PoolMaxCount = 64
-	} else {
-		PoolMaxCount, err = strconv.Atoi(poolMaxCount)
-		if err != nil {
-			PoolMaxCount = 64
-		}
-	}
-	// AUTH_ED
-	authED := os.Getenv("AUTH_ED")
-	if authED == "" {
-		AuthED = 60
-	} else {
-		AuthED, err = strconv.Atoi(authED)
-		if err != nil {
-			AuthED = 600
-		}
 	}
 }

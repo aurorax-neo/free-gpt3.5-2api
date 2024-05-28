@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
-	"github.com/aurorax-neo/go-logger"
+	"github.com/donnie4w/go-logger/logger"
 	"github.com/gin-gonic/gin"
 	"strings"
 )
@@ -36,7 +36,7 @@ func V1Cors(c *gin.Context) {
 func V1Request(c *gin.Context) {
 	// 打印请求摘要 方法 url ip - user-agent 格式化输出
 	infoStr := fmt.Sprint(" -> ", c.Request.Method, " ", c.Request.URL.String(), " - ", c.ClientIP(), " - ", c.Request.Header.Get("User-Agent"))
-	logger.Logger.Info(infoStr)
+	logger.Debug(infoStr)
 	c.Next()
 }
 
@@ -64,5 +64,5 @@ func V1Response(c *gin.Context) {
 	c.Next()
 	// 打印响应摘要 方法 url 状态码
 	infoStr := fmt.Sprint(" <- ", c.Request.Method, " ", c.Request.URL.String(), " - ", c.Writer.Status())
-	logger.Logger.Info(infoStr)
+	logger.Debug(infoStr)
 }

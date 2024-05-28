@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"free-gpt3.5-2api/AccAuthPool"
 	"free-gpt3.5-2api/FreeChat"
+	"free-gpt3.5-2api/HttpI"
 	"free-gpt3.5-2api/constant"
 	"free-gpt3.5-2api/typings"
 	"github.com/gorilla/websocket"
@@ -22,8 +23,7 @@ import (
 	v1 "free-gpt3.5-2api/service/v1"
 	"free-gpt3.5-2api/service/v1Chat/reqModel"
 	"free-gpt3.5-2api/service/v1Chat/respModel"
-	"github.com/aurorax-neo/go-logger"
-	fhttp "github.com/bogdanfinn/fhttp"
+	"github.com/donnie4w/go-logger/logger"
 	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
@@ -42,14 +42,14 @@ func Completions(c *gin.Context) {
 	ChatReq35 := v1.ApiReq2ChatReq35(apiReq)
 	if ChatReq35.Model == "" {
 		errStr := "model is not allowed"
-		logger.Logger.Error(errStr)
+		logger.Error(errStr)
 		common.ErrorResponse(c, http.StatusBadRequest, errStr, nil)
 		return
 	}
 	// 请求参数
 	body, err := common.Struct2BytesBuffer(ChatReq35)
 	if err != nil {
-		logger.Logger.Error(err.Error())
+		logger.Error(err.Error())
 		common.ErrorResponse(c, http.StatusInternalServerError, "", err)
 		return
 
@@ -58,20 +58,13 @@ func Completions(c *gin.Context) {
 	freeChat := FreeChat.GetFreeChat(authToken, constant.ReTry)
 	if freeChat == nil {
 		errStr := "please restart the program、change the IP address、use a proxy to try again."
-		logger.Logger.Error(errStr)
+		logger.Error(errStr)
 		common.ErrorResponse(c, http.StatusUnauthorized, errStr, nil)
 		return
 	}
-	// 生成请求
-	request, err := freeChat.NewRequest(fhttp.MethodPost, freeChat.ChatUrl, body)
-	if err != nil || request == nil {
-		errStr := "Request is nil or error"
-		logger.Logger.Error("Request is nil or error")
-		common.ErrorResponse(c, http.StatusInternalServerError, errStr, err)
-		return
-	}
+	headers, cookies := freeChat.GetHC(freeChat.ChatUrl)
 	// ws
-	if strings.HasPrefix(request.Header.Get("Authorization"), "Bearer eyJhbGciOiJSUzI1NiI") {
+	if strings.HasPrefix(headers.Get("Authorization"), "Bearer eyJhbGciOiJSUzI1NiI") {
 		err = InitWSConn(freeChat)
 		if err != nil {
 			common.ErrorResponse(c, http.StatusInternalServerError, "unable to create ws tunnel", err)
@@ -79,19 +72,19 @@ func Completions(c *gin.Context) {
 		}
 	}
 	// 设置请求头
-	request.Header.Set("Accept-Encoding", "gzip, deflate, br")
-	request.Header.Set("Accept", "text/event-stream")
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("oai-device-id", freeChat.FreeAuth.OaiDeviceId)
-	request.Header.Set("openai-sentinel-chat-requirements-token", freeChat.FreeAuth.Token)
+	headers.Set("Accept-Encoding", "gzip, deflate, br")
+	headers.Set("Accept", "text/event-stream")
+	headers.Set("Content-Type", "application/json")
+	headers.Set("oai-device-id", freeChat.FreeAuth.OaiDeviceId)
+	headers.Set("openai-sentinel-chat-requirements-token", freeChat.FreeAuth.Token)
 	if freeChat.FreeAuth.ProofWork.Required {
-		request.Header.Set("Openai-Sentinel-Proof-Token", freeChat.FreeAuth.ProofWork.Ospt)
+		headers.Set("Openai-Sentinel-Proof-Token", freeChat.FreeAuth.ProofWork.Ospt)
 	}
 	// 发送请求
-	response, err := freeChat.RequestClient.Do(request)
+	response, err := freeChat.Http.Request(HttpI.POST, freeChat.ChatUrl, headers, cookies, body)
 	if err != nil {
-		errStr := "RequestClient Do error"
-		logger.Logger.Error(fmt.Sprint(errStr, " ", err))
+		errStr := "Http Do error"
+		logger.Error(fmt.Sprint(errStr, " ", err))
 		common.ErrorResponse(c, http.StatusInternalServerError, errStr, err)
 		return
 	}
@@ -99,7 +92,7 @@ func Completions(c *gin.Context) {
 		_ = Body.Close()
 	}(response.Body)
 	if response.StatusCode == 429 {
-		AccAuthPool.GetAccAuthPoolInstance().SetCanUseAt(request.Header.Get("Authorization"), common.GetTimestampSecond(3600))
+		AccAuthPool.GetAccAuthPoolInstance().SetCanUseAt(headers.Get("Authorization"), common.GetTimestampSecond(3600))
 	}
 	if HandleResponseError(c, response) {
 		return
@@ -116,7 +109,7 @@ func Completions(c *gin.Context) {
 	UnlockSpecConn(freeChat)
 }
 
-func HandleResponseError(c *gin.Context, response *fhttp.Response) bool {
+func HandleResponseError(c *gin.Context, response *http.Response) bool {
 	if response.StatusCode != 200 {
 		// Try read response body as JSON
 		var errorResponse map[string]interface{}
@@ -171,13 +164,10 @@ func findSpecConn(freeChat *FreeChat.FreeChat) *connInfo {
 }
 
 func getWsURL(freeChat *FreeChat.FreeChat, retry int) (string, error) {
-	request, err := freeChat.NewRequest(http.MethodPost, FreeChat.BaseUrl+"/backend-anon/register-websocket", nil)
-	if err != nil {
-		if retry > 3 {
-			return "", err
-		}
-	}
-	response, err := freeChat.RequestClient.Do(request)
+	// 获取请求头和cookies
+	headers, cookies := freeChat.GetHC(FreeChat.BaseUrl)
+	// 发送请求
+	response, err := freeChat.Http.Request(HttpI.POST, FreeChat.BaseUrl+"/backend-anon/register-websocket", headers, cookies, nil)
 	if err != nil {
 		if retry > 3 {
 			return "", err
@@ -307,9 +297,9 @@ func InitWSConn(freeChat *FreeChat.FreeChat) error {
 func getURLAttribution(freeChat *FreeChat.FreeChat, url string) string {
 	requestURL := FreeChat.BaseUrl + "/attributions"
 	payload := bytes.NewBuffer([]byte(`{"urls":["` + url + `"]}`))
-	request, _ := freeChat.NewRequest(http.MethodPost, requestURL, payload)
-	request.Header.Set("Content-Type", "application/json")
-	response, err := freeChat.RequestClient.Do(request)
+	headers, cookies := freeChat.GetHC(requestURL)
+	headers.Set("Content-Type", "application/json")
+	response, err := freeChat.Http.Request(HttpI.POST, requestURL, headers, cookies, payload)
 	if err != nil {
 		return ""
 	}
@@ -326,8 +316,10 @@ func getURLAttribution(freeChat *FreeChat.FreeChat, url string) string {
 
 func GetImageSource(freeChat *FreeChat.FreeChat, wg *sync.WaitGroup, url string, prompt string, idx int, imgSource []string) {
 	defer wg.Done()
-	request, _ := freeChat.NewRequest(http.MethodGet, url, nil)
-	response, err := freeChat.RequestClient.Do(request)
+	// 获取请求头和cookies
+	headers, cookies := freeChat.GetHC(url)
+	// 发送请求
+	response, err := freeChat.Http.Request(HttpI.GET, url, headers, cookies, nil)
 	if err != nil {
 		return
 	}
@@ -341,7 +333,7 @@ func GetImageSource(freeChat *FreeChat.FreeChat, wg *sync.WaitGroup, url string,
 	}
 	imgSource[idx] = "[![image](" + fInfo.DownloadURL + " \"" + prompt + "\")](" + fInfo.DownloadURL + ")"
 }
-func HandlerResponse(c *gin.Context, apiReq *reqModel.ApiReq, freeChat *FreeChat.FreeChat, resp *fhttp.Response) string {
+func HandlerResponse(c *gin.Context, apiReq *reqModel.ApiReq, freeChat *FreeChat.FreeChat, resp *http.Response) string {
 	// Create a bufio.Reader from the resp body
 	reader := bufio.NewReader(resp.Body)
 	// Read the resp byte by byte until a newline character is encountered
@@ -477,7 +469,7 @@ func HandlerResponse(c *gin.Context, apiReq *reqModel.ApiReq, freeChat *FreeChat
 			if chatResp.Message.Metadata.MessageType != "next" && chatResp.Message.Metadata.MessageType != "continue" || !strings.HasSuffix(chatResp.Message.Content.ContentType, "text") {
 				continue
 			}
-			if chatResp.Message.EndTurn != nil {
+			if chatResp.Message.EndTurn == true {
 				if waitSource {
 					waitSource = false
 				}

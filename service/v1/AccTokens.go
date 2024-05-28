@@ -3,7 +3,7 @@ package v1
 import (
 	"fmt"
 	"free-gpt3.5-2api/AccAuthPool"
-	"github.com/aurorax-neo/go-logger"
+	"github.com/donnie4w/go-logger/logger"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,6 +17,6 @@ func AccTokens(c *gin.Context) {
 		Count:       AccAuthPool.GetAccAuthPoolInstance().Size(),
 		CanUseCount: AccAuthPool.GetAccAuthPoolInstance().CanUseSize(),
 	}
-	logger.Logger.Info(fmt.Sprint("AccAuthPool Tokens: ", resp.Count))
+	logger.Info(fmt.Sprint("AccAuthPool Tokens: ", resp.Count))
 	c.JSON(200, resp)
 }

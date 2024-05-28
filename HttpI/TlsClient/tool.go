@@ -1,4 +1,4 @@
-package RequestClient
+package TlsClient
 
 import (
 	"free-gpt3.5-2api/constant"
@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	clientProfile = randomClientProfile()
-	ua            = browser.Random()
-	maxForceLogin = constant.ReTry
+	clientProfile   = randomClientProfile()
+	ua              = browser.Random()
+	updateThreshold = constant.ReTry
 )
 
 func randomClientProfile() profiles.ClientProfile {
@@ -29,12 +29,12 @@ func randomClientProfile() profiles.ClientProfile {
 	return clientProfiles[randomIndex]
 }
 
-func SubMaxForceLogin() {
-	maxForceLogin--
-	if maxForceLogin < 0 {
+func SubUpdateThreshold() {
+	updateThreshold--
+	if updateThreshold < 0 {
 		clientProfile = randomClientProfile()
 		ua = browser.Random()
-		maxForceLogin = constant.ReTry
+		updateThreshold = constant.ReTry
 	}
 }
 
