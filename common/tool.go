@@ -1,20 +1,25 @@
-package TlsClient
+package common
 
 import (
 	"free-gpt3.5-2api/constant"
-	browser "github.com/EDDYCJY/fake-useragent"
+	"github.com/EDDYCJY/fake-useragent"
 	"github.com/bogdanfinn/tls-client/profiles"
 	"math/rand"
 	"time"
 )
 
+const retry = 5
+
 var (
-	clientProfile   = randomClientProfile()
+	clientProfile   = getRandomClientProfile()
 	ua              = browser.Random()
-	updateThreshold = constant.ReTry
+	updateThreshold = retry
 )
 
-func randomClientProfile() profiles.ClientProfile {
+func SubUpdateThreshold() {
+	updateThreshold--
+}
+func getRandomClientProfile() profiles.ClientProfile {
 	// 初始化随机数生成器
 	seed := time.Now().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
@@ -29,19 +34,18 @@ func randomClientProfile() profiles.ClientProfile {
 	return clientProfiles[randomIndex]
 }
 
-func SubUpdateThreshold() {
-	updateThreshold--
-	if updateThreshold < 0 {
-		clientProfile = randomClientProfile()
-		ua = browser.Random()
-		updateThreshold = constant.ReTry
-	}
-}
-
 func GetClientProfile() profiles.ClientProfile {
+	if updateThreshold < 0 {
+		clientProfile = getRandomClientProfile()
+		updateThreshold = retry
+	}
 	return clientProfile
 }
 
 func GetUa() string {
+	if updateThreshold < 0 {
+		ua = browser.Random()
+		updateThreshold = constant.ReTry
+	}
 	return ua
 }

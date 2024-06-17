@@ -41,14 +41,19 @@ func CalcProofToken(seed string, diff string, userAgent string) string {
 	config := getConfig(userAgent)
 	diffLen := len(diff)
 	hasher := sha3.New512()
+	seedBytes := []byte(seed)
+	jsonDataCache := make([]byte, 0, 256)
 	for i := 0; i < numberCollisions; i++ {
-		config[3] = i * 4
-		jsonStr, _ := json.Marshal(config)
-		base := base64.StdEncoding.EncodeToString(jsonStr)
-		hasher.Write([]byte(seed + base))
+		config[3] = i
+		jsonData, _ := json.Marshal(config)
+		jsonDataCache = jsonDataCache[:0]
+		jsonDataCache = append(jsonDataCache, jsonData...)
+		base := base64.StdEncoding.EncodeToString(jsonDataCache)
+		hasher.Write(seedBytes)
+		hasher.Write([]byte(base))
 		hash := hasher.Sum(nil)
 		hasher.Reset()
-		if hex.EncodeToString(hash[:diffLen]) <= diff {
+		if hex.EncodeToString(hash[:diffLen])[:diffLen] <= diff {
 			return "gAAAAAB" + base
 		}
 	}

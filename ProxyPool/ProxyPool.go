@@ -2,9 +2,9 @@ package ProxyPool
 
 import (
 	"fmt"
-	"free-gpt3.5-2api/HttpI"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
+	"github.com/aurorax-neo/tls_client_httpi"
 	"github.com/donnie4w/go-logger/logger"
 	"net/url"
 	"sync"
@@ -22,7 +22,7 @@ type ProxyPool struct {
 
 type Proxy struct {
 	Link    *url.URL
-	Cookies HttpI.Cookies
+	Cookies tls_client_httpi.Cookies
 }
 
 func GetProxyPoolInstance() *ProxyPool {

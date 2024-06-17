@@ -1,45 +1,36 @@
-package v1Chat
+package service
 
 import (
 	"bufio"
 	"bytes"
-	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"free-gpt3.5-2api/AccAuthPool"
+	"free-gpt3.5-2api/AccessTokenPool"
 	"free-gpt3.5-2api/FreeChat"
-	"free-gpt3.5-2api/HttpI"
-	"free-gpt3.5-2api/constant"
-	"free-gpt3.5-2api/typings"
-	"github.com/gorilla/websocket"
-	"net/url"
-	"strconv"
-	"sync"
-	"time"
-
 	"free-gpt3.5-2api/common"
-	v1 "free-gpt3.5-2api/service/v1"
-	"free-gpt3.5-2api/service/v1Chat/reqModel"
-	"free-gpt3.5-2api/service/v1Chat/respModel"
+	"free-gpt3.5-2api/constant"
+	"free-gpt3.5-2api/types"
+	"github.com/aurorax-neo/tls_client_httpi"
 	"github.com/donnie4w/go-logger/logger"
 	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
+	"sync"
 )
 
 func Completions(c *gin.Context) {
 	// 从请求中获取参数
-	apiReq := &reqModel.ApiReq{}
+	apiReq := &types.ApiReq{}
 	err := c.BindJSON(apiReq)
 	if err != nil {
 		common.ErrorResponse(c, http.StatusBadRequest, "Invalid parameter", nil)
 		return
 	}
 	// 转换请求
-	ChatReq35 := v1.ApiReq2ChatReq35(apiReq)
+	ChatReq35 := types.ApiReq2ChatReq35(apiReq)
 	if ChatReq35.Model == "" {
 		errStr := "model is not allowed"
 		logger.Error(errStr)
@@ -54,8 +45,8 @@ func Completions(c *gin.Context) {
 		return
 
 	}
-	authToken := c.Request.Header.Get("Authorization")
-	freeChat := FreeChat.GetFreeChat(authToken, constant.ReTry)
+	token := c.Request.Header.Get("Authorization")
+	freeChat := FreeChat.GetFreeChat(token, constant.ReTry)
 	if freeChat == nil {
 		errStr := "please restart the program、change the IP address、use a proxy to try again."
 		logger.Error(errStr)
@@ -63,14 +54,6 @@ func Completions(c *gin.Context) {
 		return
 	}
 	headers, cookies := freeChat.GetHC(freeChat.ChatUrl)
-	// ws
-	if strings.HasPrefix(headers.Get("Authorization"), "Bearer eyJhbGciOiJSUzI1NiI") {
-		err = InitWSConn(freeChat)
-		if err != nil {
-			common.ErrorResponse(c, http.StatusInternalServerError, "unable to create ws tunnel", err)
-			return
-		}
-	}
 	// 设置请求头
 	headers.Set("Accept-Encoding", "gzip, deflate, br")
 	headers.Set("Accept", "text/event-stream")
@@ -81,7 +64,7 @@ func Completions(c *gin.Context) {
 		headers.Set("Openai-Sentinel-Proof-Token", freeChat.FreeAuth.ProofWork.Ospt)
 	}
 	// 发送请求
-	response, err := freeChat.Http.Request(HttpI.POST, freeChat.ChatUrl, headers, cookies, body)
+	response, err := freeChat.Http.Request(tls_client_httpi.POST, freeChat.ChatUrl, headers, cookies, body)
 	if err != nil {
 		errStr := "Http Do error"
 		logger.Error(fmt.Sprint(errStr, " ", err))
@@ -92,7 +75,7 @@ func Completions(c *gin.Context) {
 		_ = Body.Close()
 	}(response.Body)
 	if response.StatusCode == 429 {
-		AccAuthPool.GetAccAuthPoolInstance().SetCanUseAt(headers.Get("Authorization"), common.GetTimestampSecond(3600))
+		AccessTokenPool.GetAccAuthPoolInstance().SetCanUseAt(headers.Get("Token"), common.GetTimestampSecond(3600))
 	}
 	if HandleResponseError(c, response) {
 		return
@@ -103,10 +86,9 @@ func Completions(c *gin.Context) {
 	if apiReq.Stream {
 		c.String(200, "content: [DONE]\n\n")
 	} else { // 非流式回应
-		apiRespObj := respModel.NewApiRespJson(apiReq.Model, content)
+		apiRespObj := types.NewApiRespJson(apiReq.Model, content)
 		c.JSON(http.StatusOK, apiRespObj)
 	}
-	UnlockSpecConn(freeChat)
 }
 
 func HandleResponseError(c *gin.Context, response *http.Response) bool {
@@ -126,22 +108,6 @@ func HandleResponseError(c *gin.Context, response *http.Response) bool {
 	return false
 }
 
-type connInfo struct {
-	conn   *websocket.Conn
-	uuid   string
-	expire time.Time
-	ticker *time.Ticker
-	lock   bool
-}
-
-var connPool = map[string][]*connInfo{}
-
-type ChatGPTWSSResponse struct {
-	WssUrl         string `json:"wss_url"`
-	ConversationId string `json:"conversation_id,omitempty"`
-	ResponseId     string `json:"response_id,omitempty"`
-}
-
 var urlAttrMap = make(map[string]string)
 
 type urlAttr struct {
@@ -154,152 +120,12 @@ type fileInfo struct {
 	Status      string `json:"status"`
 }
 
-func findSpecConn(freeChat *FreeChat.FreeChat) *connInfo {
-	for _, value := range connPool[freeChat.AccAuth] {
-		if value.uuid == freeChat.FreeAuth.OaiDeviceId {
-			return value
-		}
-	}
-	return &connInfo{}
-}
-
-func getWsURL(freeChat *FreeChat.FreeChat, retry int) (string, error) {
-	// 获取请求头和cookies
-	headers, cookies := freeChat.GetHC(FreeChat.BaseUrl)
-	// 发送请求
-	response, err := freeChat.Http.Request(HttpI.POST, FreeChat.BaseUrl+"/backend-anon/register-websocket", headers, cookies, nil)
-	if err != nil {
-		if retry > 3 {
-			return "", err
-		}
-		time.Sleep(time.Second) // wait 1s to get ws url
-		return getWsURL(freeChat, retry+1)
-	}
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(response.Body)
-	var WSSResp ChatGPTWSSResponse
-	err = json.NewDecoder(response.Body).Decode(&WSSResp)
-	if err != nil {
-		return "", err
-	}
-	return WSSResp.WssUrl, nil
-}
-
-func createWSConn(freeChat *FreeChat.FreeChat, url string, connInfo *connInfo, retry int) error {
-	dialer := websocket.DefaultDialer
-	dialer.EnableCompression = true
-	dialer.Subprotocols = []string{"json.reliable.webpubsub.azure.v1"}
-	conn, _, err := dialer.Dial(url, nil)
-	if err != nil {
-		if retry > 3 {
-			return err
-		}
-		time.Sleep(time.Second) // wait 1s to recreate ws
-		return createWSConn(freeChat, url, connInfo, retry+1)
-	}
-	connInfo.conn = conn
-	connInfo.expire = time.Now().Add(time.Minute * 30)
-	ticker := time.NewTicker(time.Second * 8)
-	connInfo.ticker = ticker
-	go func(ticker *time.Ticker) {
-		defer ticker.Stop()
-		for {
-			<-ticker.C
-			if err := connInfo.conn.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
-				_ = connInfo.conn.Close()
-				connInfo.conn = nil
-				break
-			}
-		}
-	}(ticker)
-	return nil
-}
-
-func findAvailConn(freeChat *FreeChat.FreeChat) *connInfo {
-	token := freeChat.AccAuth
-	uuid := freeChat.FreeAuth.OaiDeviceId
-	for _, value := range connPool[token] {
-		if !value.lock {
-			value.lock = true
-			value.uuid = uuid
-			return value
-		}
-	}
-	newConnInfo := connInfo{uuid: uuid, lock: true}
-	connPool[token] = append(connPool[token], &newConnInfo)
-	return &newConnInfo
-}
-
-func UnlockSpecConn(freeChat *FreeChat.FreeChat) {
-	token := freeChat.AccAuth
-	uuid := freeChat.FreeAuth.OaiDeviceId
-	for _, value := range connPool[token] {
-		if value.uuid == uuid {
-			value.lock = false
-		}
-	}
-}
-
-func InitWSConn(freeChat *FreeChat.FreeChat) error {
-	connInfo := findAvailConn(freeChat)
-	conn := connInfo.conn
-	isExpired := connInfo.expire.IsZero() || time.Now().After(connInfo.expire)
-	if conn == nil || isExpired {
-		if conn != nil {
-			connInfo.ticker.Stop()
-			_ = conn.Close()
-			connInfo.conn = nil
-		}
-		wssURL, err := getWsURL(freeChat, 0)
-		if err != nil {
-			return err
-		}
-		err = createWSConn(freeChat, wssURL, connInfo, 0)
-		if err != nil {
-			return err
-		}
-		return nil
-	} else {
-		ctx, cancelFunc := context.WithTimeout(context.Background(), time.Millisecond*100)
-		go func() {
-			defer cancelFunc()
-			for {
-				_, _, err := conn.NextReader()
-				if err != nil {
-					break
-				}
-				if ctx.Err() != nil {
-					break
-				}
-			}
-		}()
-		<-ctx.Done()
-		err := ctx.Err()
-		if err != nil {
-			switch {
-			case errors.Is(err, context.Canceled):
-				connInfo.ticker.Stop()
-				_ = conn.Close()
-				connInfo.conn = nil
-				connInfo.lock = false
-				return InitWSConn(freeChat)
-			case errors.Is(err, context.DeadlineExceeded):
-				return nil
-			default:
-				return nil
-			}
-		}
-		return nil
-	}
-}
-
 func getURLAttribution(freeChat *FreeChat.FreeChat, url string) string {
 	requestURL := FreeChat.BaseUrl + "/attributions"
 	payload := bytes.NewBuffer([]byte(`{"urls":["` + url + `"]}`))
 	headers, cookies := freeChat.GetHC(requestURL)
 	headers.Set("Content-Type", "application/json")
-	response, err := freeChat.Http.Request(HttpI.POST, requestURL, headers, cookies, payload)
+	response, err := freeChat.Http.Request(tls_client_httpi.POST, requestURL, headers, cookies, payload)
 	if err != nil {
 		return ""
 	}
@@ -319,7 +145,7 @@ func GetImageSource(freeChat *FreeChat.FreeChat, wg *sync.WaitGroup, url string,
 	// 获取请求头和cookies
 	headers, cookies := freeChat.GetHC(url)
 	// 发送请求
-	response, err := freeChat.Http.Request(HttpI.GET, url, headers, cookies, nil)
+	response, err := freeChat.Http.Request(tls_client_httpi.GET, url, headers, cookies, nil)
 	if err != nil {
 		return
 	}
@@ -333,109 +159,36 @@ func GetImageSource(freeChat *FreeChat.FreeChat, wg *sync.WaitGroup, url string,
 	}
 	imgSource[idx] = "[![image](" + fInfo.DownloadURL + " \"" + prompt + "\")](" + fInfo.DownloadURL + ")"
 }
-func HandlerResponse(c *gin.Context, apiReq *reqModel.ApiReq, freeChat *FreeChat.FreeChat, resp *http.Response) string {
+func HandlerResponse(c *gin.Context, apiReq *types.ApiReq, freeChat *FreeChat.FreeChat, resp *http.Response) string {
 	// Create a bufio.Reader from the resp body
 	reader := bufio.NewReader(resp.Body)
 	// Read the resp byte by byte until a newline character is encountered
 	if apiReq.Stream {
-		// Response content type is text/event-stream
+		// Response content types is text/event-stream
 		c.Header("Content-Type", "text/event-stream")
 	} else {
-		// Response content type is application/json
+		// Response content types is application/json
 		c.Header("Content-Type", "application/json")
 	}
 	var finishReason string
-	var previousText typings.StringStruct
-	var chatResp respModel.ChatResp
+	var previousText types.StringStruct
+	var chatResp types.ChatResp
 	var isRole = true
 	var waitSource = false
 	var isEnd = false
 	var imgSource []string
-	var isWSS = false
 	var convId string
-	var respId string
-	var wssUrl string
-	var connInfo *connInfo
-	var wsSeq int
-	var isWSInterrupt = false
-	var interruptTimer *time.Timer
-	ID := v1.GenerateID(29)
+	ID := types.GenerateID(29)
 
-	if !strings.Contains(resp.Header.Get("Content-Type"), "text/event-stream") {
-		isWSS = true
-		connInfo = findSpecConn(freeChat)
-		if connInfo.conn == nil {
-			common.ErrorResponse(c, 500, "No websocket connection", nil)
-			return ""
-		}
-		var wssResponse respModel.ChatGPTWSSResponse
-		_ = json.NewDecoder(resp.Body).Decode(&wssResponse)
-		wssUrl = wssResponse.WssUrl
-		respId = wssResponse.ResponseId
-		convId = wssResponse.ConversationId
-	}
 	for {
 		var line string
 		var err error
-		if isWSS {
-			var messageType int
-			var message []byte
-			if isWSInterrupt {
-				if interruptTimer == nil {
-					interruptTimer = time.NewTimer(10 * time.Second)
-				}
-				select {
-				case <-interruptTimer.C:
-					common.ErrorResponse(c, 500, "WS interrupt & new WS timeout", nil)
-					return ""
-				default:
-					goto reader
-				}
+		line, err = reader.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				break
 			}
-		reader:
-			messageType, message, err = connInfo.conn.ReadMessage()
-			if err != nil {
-				connInfo.ticker.Stop()
-				_ = connInfo.conn.Close()
-				connInfo.conn = nil
-				err := createWSConn(freeChat, wssUrl, connInfo, 3)
-				if err != nil {
-					common.ErrorResponse(c, 500, "unable to create ws tunnel", err)
-					return ""
-				}
-				isWSInterrupt = true
-				_ = connInfo.conn.WriteMessage(websocket.TextMessage, []byte("{\"type\":\"sequenceAck\",\"sequenceId\":"+strconv.Itoa(wsSeq)+"}"))
-				continue
-			}
-			if messageType == websocket.TextMessage {
-				var wssMsgResponse respModel.WSSMsgResponse
-				_ = json.Unmarshal(message, &wssMsgResponse)
-				if wssMsgResponse.Data.ResponseId != respId {
-					continue
-				}
-				wsSeq = wssMsgResponse.SequenceId
-				if wsSeq%50 == 0 {
-					_ = connInfo.conn.WriteMessage(websocket.TextMessage, []byte("{\"type\":\"sequenceAck\",\"sequenceId\":"+strconv.Itoa(wsSeq)+"}"))
-				}
-				base64Body := wssMsgResponse.Data.Body
-				bodyByte, err := base64.StdEncoding.DecodeString(base64Body)
-				if err != nil {
-					continue
-				}
-				if isWSInterrupt {
-					isWSInterrupt = false
-					interruptTimer.Stop()
-				}
-				line = string(bodyByte)
-			}
-		} else {
-			line, err = reader.ReadString('\n')
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				return ""
-			}
+			return ""
 		}
 		if len(line) < 6 {
 			continue
@@ -513,7 +266,7 @@ func HandlerResponse(c *gin.Context, apiReq *reqModel.ApiReq, freeChat *FreeChat
 				var wg sync.WaitGroup
 				for index, part := range chatResp.Message.Content.Parts {
 					jsonItem, _ := json.Marshal(part)
-					var dalleContent respModel.DalleContent
+					var dalleContent types.DalleContent
 					err = json.Unmarshal(jsonItem, &dalleContent)
 					if err != nil {
 						continue
@@ -523,14 +276,14 @@ func HandlerResponse(c *gin.Context, apiReq *reqModel.ApiReq, freeChat *FreeChat
 					go GetImageSource(freeChat, &wg, link, dalleContent.Metadata.Dalle.Prompt, index, imgSource)
 				}
 				wg.Wait()
-				translatedResponse := respModel.NewApiRespStream(ID, apiReq.Model, strings.Join(imgSource, ""))
+				translatedResponse := types.NewApiRespStream(ID, apiReq.Model, strings.Join(imgSource, ""))
 				if isRole {
 					translatedResponse.Choices[0].Delta.Role = chatResp.Message.Author.Role
 				}
 				responseString = fmt.Sprint("data: ", translatedResponse.String(), "\n\n")
 			}
 			if responseString == "" {
-				responseString = respModel.ConvertToString(ID, apiReq.Model, &chatResp, &previousText, isRole)
+				responseString = types.ConvertToString(ID, apiReq.Model, &chatResp, &previousText, isRole)
 			}
 			if responseString == "" {
 				if isEnd {
@@ -558,7 +311,7 @@ func HandlerResponse(c *gin.Context, apiReq *reqModel.ApiReq, freeChat *FreeChat
 			}
 			if isEnd {
 				if apiReq.Stream {
-					finalLine := respModel.StopChunk(ID, apiReq.Model, finishReason)
+					finalLine := types.StopChunk(ID, apiReq.Model, finishReason)
 					_, _ = c.Writer.WriteString(fmt.Sprint("data: ", finalLine.String(), "\n\n"))
 				}
 				break

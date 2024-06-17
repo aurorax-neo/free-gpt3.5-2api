@@ -3,9 +3,6 @@ package common
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	fhttp "github.com/bogdanfinn/fhttp"
-	"github.com/bogdanfinn/fhttp/httputil"
 	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
 	"math/rand"
@@ -222,26 +219,6 @@ func RandomHexadecimalString() string {
 		b[i] = charset[rng.Intn(len(charset))]
 	}
 	return string(b)
-}
-
-// OutRequest 打印请求.
-func OutRequest(req *fhttp.Request) {
-	dump, err := httputil.DumpRequestOut(req, true)
-	if err != nil {
-		fmt.Println("Error dumping request:", err)
-	} else {
-		fmt.Println(string(dump))
-	}
-}
-
-// OutResponse 打印响应.
-func OutResponse(res *fhttp.Response) {
-	dump, err := httputil.DumpResponse(res, true)
-	if err != nil {
-		fmt.Println("Error dumping response:", err)
-	} else {
-		fmt.Println(string(dump))
-	}
 }
 
 func IsStrInArray(str string, strS []string) bool {

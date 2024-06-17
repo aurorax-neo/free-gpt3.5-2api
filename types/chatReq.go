@@ -1,4 +1,4 @@
-package reqModel
+package types
 
 type ChatAuthor struct {
 	Role string `json:"role"`

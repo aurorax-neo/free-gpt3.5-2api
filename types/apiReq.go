@@ -1,4 +1,4 @@
-package reqModel
+package types
 
 type ApiReq struct {
 	Messages    []ApiMessage `json:"messages"`

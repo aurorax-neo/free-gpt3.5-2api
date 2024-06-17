@@ -1,20 +1,11 @@
-package router
+package api
 
 import (
-	"fmt"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
-	"github.com/donnie4w/go-logger/logger"
 	"github.com/gin-gonic/gin"
 	"strings"
 )
-
-// Ping 测试接口
-func Ping(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
-}
 
 // V1Cors 跨域中间件
 func V1Cors(c *gin.Context) {
@@ -22,21 +13,13 @@ func V1Cors(c *gin.Context) {
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	c.Writer.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept")
+	c.Writer.Header().Set("Access-Control-Allow-Headers", "Token, Content-Type, Accept")
 	c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	// 如果是OPTIONS请求，直接返回
 	if c.Request.Method == "OPTIONS" {
 		c.AbortWithStatus(204)
 		return
 	}
-	c.Next()
-}
-
-// V1Request 请求中间件
-func V1Request(c *gin.Context) {
-	// 打印请求摘要 方法 url ip - user-agent 格式化输出
-	infoStr := fmt.Sprint(" -> ", c.Request.Method, " ", c.Request.URL.String(), " - ", c.ClientIP(), " - ", c.Request.Header.Get("User-Agent"))
-	logger.Debug(infoStr)
 	c.Next()
 }
 
@@ -48,7 +31,7 @@ func V1Auth(c *gin.Context) {
 		return
 	}
 	if authToken == "" && len(config.AUTHORIZATIONS) > 0 {
-		common.ErrorResponse(c, 401, "You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY)", nil)
+		common.ErrorResponse(c, 401, "You didn't provide an API key. You need to provide your API key in an Token header using Bearer auth (i.e. Token: Bearer YOUR_KEY)", nil)
 		return
 	}
 	// 判断 authToken 是否在 config.CONFIG.AUTHORIZATIONS 列表
@@ -57,12 +40,4 @@ func V1Auth(c *gin.Context) {
 		return
 	}
 	c.Next()
-}
-
-// V1Response 响应中间件
-func V1Response(c *gin.Context) {
-	c.Next()
-	// 打印响应摘要 方法 url 状态码
-	infoStr := fmt.Sprint(" <- ", c.Request.Method, " ", c.Request.URL.String(), " - ", c.Writer.Status())
-	logger.Debug(infoStr)
 }

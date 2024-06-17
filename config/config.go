@@ -1,11 +1,12 @@
 package config
 
 import (
-	"free-gpt3.5-2api/AccAuthPool"
+	"free-gpt3.5-2api/AccessTokenPool"
 	"free-gpt3.5-2api/common"
 	"github.com/donnie4w/go-logger/logger"
 	"github.com/joho/godotenv"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -23,32 +24,46 @@ var (
 
 func init() {
 	_ = godotenv.Load()
-	// LOG_LEVEL
-	LogLevel = os.Getenv("LOG_LEVEL")
-	if LogLevel == "" {
-		LogLevel = "INFO"
+	// logger Options
+	LogOpts := &logger.Option{
+		Level:   logger.LEVEL_INFO,
+		Console: true,
 	}
-	switch LogLevel {
-	case "DEBUG":
-		_ = logger.SetLevel(logger.LEVEL_DEBUG)
-	case "INFO":
-		_ = logger.SetLevel(logger.LEVEL_INFO)
-	case "WARN":
-		_ = logger.SetLevel(logger.LEVEL_WARN)
-	case "ERROR":
-		_ = logger.SetLevel(logger.LEVEL_ERROR)
-	case "FATAL":
-		_ = logger.SetLevel(logger.LEVEL_FATAL)
-	default:
-		_ = logger.SetLevel(logger.LEVEL_INFO)
-	}
-
 	// LOG_PATH
 	LogPath = os.Getenv("LOG_PATH")
-
+	if LogPath == "" {
+		LogPath = "logs"
+	}
 	// LOG_FILE
 	LogFile = os.Getenv("LOG_FILE")
-	_, _ = logger.SetRollingDaily(LogPath, LogFile)
+	if LogFile != "" {
+		LogFilename := filepath.Join(LogPath, LogFile)
+		LogOpts.FileOption = &logger.FileTimeMode{
+			Filename:   LogFilename,
+			Maxbuckup:  10,
+			IsCompress: true,
+			Timemode:   logger.MODE_DAY,
+		}
+	}
+	// LOG_LEVEL
+	LogLevel = os.Getenv("LOG_LEVEL")
+	switch LogLevel {
+	case "DEBUG":
+		LogOpts.Level = logger.LEVEL_DEBUG
+	case "INFO":
+		LogOpts.Level = logger.LEVEL_INFO
+	case "WARN":
+		LogOpts.Level = logger.LEVEL_WARN
+	case "ERROR":
+		LogOpts.Level = logger.LEVEL_ERROR
+	case "FATAL":
+		LogOpts.Level = logger.LEVEL_FATAL
+	default:
+		LogOpts.Level = logger.LEVEL_INFO
+	}
+	// set logger options
+	logger.SetOption(LogOpts)
+
 	// Bind
 	Bind = os.Getenv("BIND")
 	if Bind == "" {
@@ -71,7 +86,7 @@ func init() {
 	} else {
 		AccessTokens = common.SplitAndAddPre("Bearer ", accessTokens, ",")
 	}
-	AccAuthPool.GetAccAuthPoolInstance().AppendAccAuths(AccessTokens)
+	AccessTokenPool.GetAccAuthPoolInstance().AppendTokens(AccessTokens)
 	// AUTH_TOKEN
 	authorizations := os.Getenv("AUTHORIZATIONS")
 	if authorizations == "" {

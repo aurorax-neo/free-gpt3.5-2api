@@ -1,7 +1,6 @@
-package v1
+package types
 
 import (
-	"free-gpt3.5-2api/service/v1Chat/reqModel"
 	"github.com/google/uuid"
 	"math/rand"
 )
@@ -30,14 +29,14 @@ func GenerateID(length int) string {
 	return id
 }
 
-func ApiReq2ChatReq35(apiReq *reqModel.ApiReq) (chatReq *reqModel.ChatReq) {
-	messages := make([]reqModel.ChatMessages, 0)
+func ApiReq2ChatReq35(apiReq *ApiReq) (chatReq *ChatReq) {
+	messages := make([]ChatMessages, 0)
 	for _, apiMessage := range apiReq.Messages {
-		chatMessage := reqModel.ChatMessages{
-			Author: reqModel.ChatAuthor{
+		chatMessage := ChatMessages{
+			Author: ChatAuthor{
 				Role: apiMessage.Role,
 			},
-			Content: reqModel.ChatContent{
+			Content: ChatContent{
 				ContentType: "text",
 				Parts:       []string{apiMessage.Content},
 			},
@@ -45,7 +44,7 @@ func ApiReq2ChatReq35(apiReq *reqModel.ApiReq) (chatReq *reqModel.ChatReq) {
 		messages = append(messages, chatMessage)
 	}
 
-	chatReq = &reqModel.ChatReq{
+	chatReq = &ChatReq{
 		Action:                     "next",
 		Messages:                   messages,
 		ParentMessageId:            uuid.New().String(),
@@ -53,7 +52,7 @@ func ApiReq2ChatReq35(apiReq *reqModel.ApiReq) (chatReq *reqModel.ChatReq) {
 		TimeZoneOffsetMin:          -180,
 		Suggestions:                make([]string, 0),
 		HistoryAndTrainingDisabled: true,
-		ConversationMode: reqModel.ChatConversationMode{
+		ConversationMode: ChatConversationMode{
 			Kind: "primary_assistant",
 		},
 		WebsocketRequestId: uuid.New().String(),
