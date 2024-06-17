@@ -51,7 +51,11 @@ docker run -itd  --name=free-gpt3.5-2api -p 9846:3040 ghcr.io/aurorax-neo/free-g
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower -cR free-gpt3.5-2api --debug
 ```
 
-### 2.Koyeb部署
+### 2.Vercel部署
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/aurorax-neo/free-gpt3.5-2api&project-name=free-gpt3.5-2api&repository-name=free-gpt3.5-2api)
+
+### 3.Koyeb部署
 
 ###### 注意：`Regions`请选择支持`openai`免登的区域！！！现原生ip已不支持免登，请配置代理使用！！！
 
