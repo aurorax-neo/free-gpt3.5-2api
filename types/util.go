@@ -52,6 +52,8 @@ func ApiReq2ChatReq35(apiReq *ApiReq) (chatReq *ChatReq) {
 		TimeZoneOffsetMin:          -180,
 		Suggestions:                make([]string, 0),
 		HistoryAndTrainingDisabled: true,
+		ForceUseSse:                false,
+		FaceUseSse:                 true,
 		ConversationMode: ChatConversationMode{
 			Kind: "primary_assistant",
 		},
