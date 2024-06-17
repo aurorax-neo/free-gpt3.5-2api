@@ -67,8 +67,11 @@ func GetFreeChat(token string, retry int) *FreeChat {
 	}
 	// 判断是否使用 AccessTokenPool
 	if strings.HasPrefix(token, "Bearer "+AccessTokenPool.AccAuthAuthorizationPre) && !AccessTokenPool.GetAccAuthPoolInstance().IsEmpty() {
-		accA := AccessTokenPool.GetAccAuthPoolInstance().GetToken()
-		freeChat := newFreeChat(accA)
+		token_ := AccessTokenPool.GetAccAuthPoolInstance().GetToken()
+		if token_ == "" {
+			return nil
+		}
+		freeChat := newFreeChat(token_)
 		if freeChat == nil && retry > 0 {
 			return GetFreeChat(token, retry-1)
 		}

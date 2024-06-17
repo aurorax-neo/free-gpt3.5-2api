@@ -27,7 +27,7 @@ BASE_URL=         # 默认：https://chat.openai.com
 
 ###### 也可使用与程序同目录下 `.env` 文件配置上述字段
 
-##### 若要使用TOKENS_FILE内的账号，AUTHORIZATIONS字段内必须配置`ac-`开头的AUTHORIZATION并使用ac-***调用本程序，若ACCESS_TOKENS无可用账号则默认使用免登
+##### 若要使用TOKENS_FILE内的账号，AUTHORIZATIONS字段内必须配置`ac-`开头的AUTHORIZATION并使用ac-***调用本程序，若ACCESS_TOKENS无可用账号则返回401错误，`tokens.yml`详见`tokens.template.yml`
 
 ## 三、部署
 

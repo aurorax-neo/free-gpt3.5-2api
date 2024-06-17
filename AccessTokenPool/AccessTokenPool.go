@@ -56,7 +56,7 @@ func (a *AccessTokenPool) IsEmpty() bool {
 func (a *AccessTokenPool) CanUseSize() int {
 	var count int
 	for _, v := range a.AccessTokens {
-		if v.CanUseAt <= common.GetTimestampSecond(0) {
+		if v.CanUseAt <= common.GetTimestampSecond(0) && v.ExpiresAt > common.GetTimestampSecond(0) {
 			count++
 		}
 	}
@@ -68,11 +68,11 @@ func (a *AccessTokenPool) GetToken() string {
 		return ""
 	}
 	a.index = (a.index + 1) % len(a.AccessTokens)
-	authorization := a.AccessTokens[a.index].Token
-	if a.AccessTokens[a.index].CanUseAt > common.GetTimestampSecond(0) {
+	accessToken := a.AccessTokens[a.index]
+	if accessToken.CanUseAt > common.GetTimestampSecond(0) || accessToken.ExpiresAt < common.GetTimestampSecond(0) {
 		return a.GetToken()
 	}
-	return authorization
+	return accessToken.Token
 }
 
 func (a *AccessTokenPool) SetCanUseAt(token string, canUseAt int64) {
