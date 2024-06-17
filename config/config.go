@@ -5,6 +5,7 @@ import (
 	"free-gpt3.5-2api/common"
 	"github.com/donnie4w/go-logger/logger"
 	"github.com/joho/godotenv"
+	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,10 +18,14 @@ var (
 	Bind           string
 	Port           string
 	Proxy          []string
-	AccessTokens   []string
+	TokensFile     string
 	AUTHORIZATIONS []string
 	BaseUrl        string
 )
+
+type Tokens struct {
+	AccessTokens []*AccessTokenPool.AccessToken `yaml:"access_tokens,omitempty"`
+}
 
 func init() {
 	_ = godotenv.Load()
@@ -79,14 +84,27 @@ func init() {
 	if proxy != "" {
 		Proxy = strings.Split(proxy, ",")
 	}
-	// ACCESS_TOKEN
-	accessTokens := os.Getenv("ACCESS_TOKENS")
-	if accessTokens == "" {
-		AccessTokens = []string{}
+	// ACCESS_TOKEN_FILE
+	accessTokensFile := os.Getenv("TOKENS_FILE")
+	if accessTokensFile == "" {
+		TokensFile = common.GetAbsPath("tokens.yml")
 	} else {
-		AccessTokens = common.SplitAndAddPre("Bearer ", accessTokens, ",")
+		TokensFile = common.GetAbsPath(accessTokensFile)
 	}
-	AccessTokenPool.GetAccAuthPoolInstance().AppendTokens(AccessTokens)
+	if common.IsFileExist(TokensFile) {
+		bytes, err := common.ReadFile(TokensFile)
+		if err != nil {
+			logger.Error("ReadFile error: ", err)
+		}
+		var tokens Tokens
+		if err = yaml.Unmarshal(bytes, &tokens); err != nil {
+			logger.Error("Unmarshal error: ", err)
+		}
+		for _, token := range tokens.AccessTokens {
+			token.Token = "Bearer " + token.Token
+		}
+		AccessTokenPool.GetAccAuthPoolInstance().AppendAccessTokens(tokens.AccessTokens)
+	}
 	// AUTH_TOKEN
 	authorizations := os.Getenv("AUTHORIZATIONS")
 	if authorizations == "" {

@@ -18,8 +18,9 @@ type AccessTokenPool struct {
 }
 
 type AccessToken struct {
-	Token    string
-	CanUseAt int64
+	Token     string `yaml:"token,omitempty"`
+	ExpiresAt int64  `yaml:"expires_at,omitempty"`
+	CanUseAt  int64  `yaml:"-"`
 }
 
 func newAccAuthPool() *AccessTokenPool {
@@ -36,17 +37,12 @@ func GetAccAuthPoolInstance() *AccessTokenPool {
 	return instance
 }
 
-func (a *AccessTokenPool) AddToken(token string) {
-	a.AccessTokens = append(a.AccessTokens, &AccessToken{
-		Token:    token,
-		CanUseAt: 0,
-	})
+func (a *AccessTokenPool) AddAccessToken(accessToken *AccessToken) {
+	a.AccessTokens = append(a.AccessTokens, accessToken)
 }
 
-func (a *AccessTokenPool) AppendTokens(tokens []string) {
-	for _, accAuth := range tokens {
-		a.AddToken(accAuth)
-	}
+func (a *AccessTokenPool) AppendAccessTokens(accessTokens []*AccessToken) {
+	a.AccessTokens = append(a.AccessTokens, accessTokens...)
 }
 
 func (a *AccessTokenPool) Size() int {
