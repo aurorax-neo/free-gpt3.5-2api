@@ -1,8 +1,7 @@
-package respModel
+package types
 
 import (
 	"encoding/json"
-	"free-gpt3.5-2api/typings"
 	"strings"
 	"time"
 )
@@ -49,7 +48,7 @@ func NewApiRespStream(id string, model string, content string) *ApiRespStream {
 	return apiRespStream
 }
 
-func ConvertToString(id string, model string, chatResp *ChatResp, previousText *typings.StringStruct, role bool) string {
+func ConvertToString(id string, model string, chatResp *ChatResp, previousText *StringStruct, role bool) string {
 	apiRespJson := NewApiRespStream(id, model, strings.Replace(chatResp.Message.Content.Parts[0].(string), previousText.Text, "", 1))
 	if role {
 		apiRespJson.Choices[0].Delta.Role = chatResp.Message.Author.Role

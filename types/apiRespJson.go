@@ -1,7 +1,6 @@
-package respModel
+package types
 
 import (
-	v1 "free-gpt3.5-2api/service/v1"
 	"time"
 )
 
@@ -39,7 +38,7 @@ type ApiRespJsonUsage struct {
 
 func NewApiRespJson(model string, content string) *ApiRespJson {
 	apiRespObj := &ApiRespJson{
-		ID:      v1.GenerateID(29),
+		ID:      GenerateID(29),
 		Created: time.Now().Unix(),
 		Object:  "chat.completion",
 		Model:   model,

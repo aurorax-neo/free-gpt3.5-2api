@@ -55,8 +55,8 @@ jobs:
             ${{ env.GHCR_REPO }}:latest
             ${{ env.GHCR_REPO }}:${{ steps.get_docker_image_tag.outputs.tag }}
             ${{ env.GHCR_REPO }}:${{ github.sha }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+          cache-from: types=local,src=/tmp/.buildx-cache
+          cache-to: types=local,dest=/tmp/.buildx-cache,mode=max
 
       - name: Delete Workflow Runs
         uses: Mattraks/delete-workflow-runs@v2

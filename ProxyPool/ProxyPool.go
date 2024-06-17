@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
-	"github.com/aurorax-neo/go-logger"
-	fhttp "github.com/bogdanfinn/fhttp"
+	"github.com/aurorax-neo/tls_client_httpi"
+	"github.com/donnie4w/go-logger/logger"
 	"net/url"
 	"sync"
 )
@@ -22,12 +22,12 @@ type ProxyPool struct {
 
 type Proxy struct {
 	Link    *url.URL
-	Cookies []*fhttp.Cookie
+	Cookies tls_client_httpi.Cookies
 }
 
 func GetProxyPoolInstance() *ProxyPool {
 	Once.Do(func() {
-		logger.Logger.Debug(fmt.Sprint("Init ProxyPool..."))
+		logger.Debug(fmt.Sprint("Init ProxyPool..."))
 		// 初始化 ProxyPool
 		Instance = NewProxyPool(nil)
 		// 遍历配置文件中的代理 添加到代理池
@@ -35,7 +35,7 @@ func GetProxyPoolInstance() *ProxyPool {
 			proxy := NewProxy(px)
 			Instance.AddProxy(proxy)
 		}
-		logger.Logger.Debug(fmt.Sprint("Init ProxyPool Success"))
+		logger.Debug(fmt.Sprint("Init ProxyPool Success"))
 	})
 	return Instance
 }

@@ -3,11 +3,9 @@ package common
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	fhttp "github.com/bogdanfinn/fhttp"
-	"github.com/bogdanfinn/fhttp/httputil"
 	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
+	"io"
 	"math/rand"
 	"net/url"
 	"os"
@@ -224,26 +222,6 @@ func RandomHexadecimalString() string {
 	return string(b)
 }
 
-// OutRequest 打印请求.
-func OutRequest(req *fhttp.Request) {
-	dump, err := httputil.DumpRequestOut(req, true)
-	if err != nil {
-		fmt.Println("Error dumping request:", err)
-	} else {
-		fmt.Println(string(dump))
-	}
-}
-
-// OutResponse 打印响应.
-func OutResponse(res *fhttp.Response) {
-	dump, err := httputil.DumpResponse(res, true)
-	if err != nil {
-		fmt.Println("Error dumping response:", err)
-	} else {
-		fmt.Println(string(dump))
-	}
-}
-
 func IsStrInArray(str string, strS []string) bool {
 	// 如果 strS 为空，直接返回 true
 	if len(strS) == 0 {
@@ -255,4 +233,26 @@ func IsStrInArray(str string, strS []string) bool {
 		}
 	}
 	return false
+}
+
+// IsFileExist 判断文件是否存在
+func IsFileExist(filePath string) bool {
+	_, err := os.Stat(filePath)
+	return err == nil || os.IsExist(err)
+}
+
+// ReadFile 读取文件
+func ReadFile(filePath string) ([]byte, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
+	all, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+	return all, nil
 }

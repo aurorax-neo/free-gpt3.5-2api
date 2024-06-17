@@ -1,4 +1,4 @@
-package respModel
+package types
 
 import "time"
 
@@ -28,7 +28,7 @@ type ChatResp struct {
 	ConversationId string      `json:"conversation_id"`
 	Error          interface{} `json:"error"`
 	// 审核
-	Type               string `json:"type"`
+	Type               string `json:"types"`
 	MessageId          string `json:"message_id"`
 	IsCompletion       bool   `json:"is_completion"`
 	ModerationResponse struct {
@@ -79,47 +79,34 @@ type CitaMeta struct {
 }
 
 type FinishDetails struct {
-	Type string `json:"type"`
+	Type string `json:"types"`
 	Stop string `json:"stop"`
 }
 
 type ChatRespInfo struct {
-	Type         string    `json:"type"`
+	Type         string    `json:"types"`
 	CallToAction string    `json:"call_to_action"`
 	ResetsAfter  time.Time `json:"resets_after"`
 	LimitDetails struct {
-		Type                  string `json:"type"`
+		Type                  string `json:"types"`
 		ModelSlug             string `json:"model_slug"`
 		UsingDefaultModelSlug string `json:"using_default_model_slug"`
 		NextModelSlug         string `json:"next_model_slug"`
 		ModelLimitName        string `json:"model_limit_name"`
 	} `json:"limit_details"`
 	DisplayDescription struct {
-		Type                string      `json:"type"`
+		Type                string      `json:"types"`
 		Description         string      `json:"description"`
 		MarkdownDescription interface{} `json:"markdown_description"`
 	} `json:"display_description"`
 	ConversationId string `json:"conversation_id"`
 }
 
-type ChatGPTWSSResponse struct {
-	WssUrl         string `json:"wss_url"`
-	ConversationId string `json:"conversation_id,omitempty"`
-	ResponseId     string `json:"response_id,omitempty"`
+type GenericResponseLine struct {
+	Line  string `json:"line"`
+	Error string `json:"error"`
 }
 
-type WSSMsgResponse struct {
-	SequenceId int                `json:"sequenceId"`
-	Type       string             `json:"type"`
-	From       string             `json:"from"`
-	DataType   string             `json:"dataType"`
-	Data       WSSMsgResponseData `json:"data"`
-}
-
-type WSSMsgResponseData struct {
-	Type           string `json:"type"`
-	Body           string `json:"body"`
-	MoreBody       bool   `json:"more_body"`
-	ResponseId     string `json:"response_id"`
-	ConversationId string `json:"conversation_id"`
+type StringStruct struct {
+	Text string `json:"text"`
 }

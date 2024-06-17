@@ -1,4 +1,4 @@
-package reqModel
+package types
 
 type ChatAuthor struct {
 	Role string `json:"role"`
@@ -26,6 +26,8 @@ type ChatReq struct {
 	TimeZoneOffsetMin          int                  `json:"timezone_offset_min"`
 	Suggestions                []string             `json:"suggestions"`
 	HistoryAndTrainingDisabled bool                 `json:"history_and_training_disabled"`
+	ForceUseSse                bool                 `json:"force_use_sse"`
+	FaceUseSse                 bool                 `json:"face_use_sse"`
 	ConversationMode           ChatConversationMode `json:"conversation_mode"`
 	WebsocketRequestId         string               `json:"websocket_request_id"`
 }

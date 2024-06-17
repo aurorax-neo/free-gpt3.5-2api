@@ -8,7 +8,7 @@
 
 #### 2.支持账号chat2api（Authorization Bearer eyJhbGciOiJSUz***）
 
-#### 3.支持账号ACCESS_TOKEN池（Authorization Bearer ac-***）
+#### 3.支持账号ACCESS_TOKEN（Authorization Bearer ac-***）
 
 ## 二、配置
 
@@ -19,7 +19,7 @@ LOG_LEVEL=info    # debug, info, warn, error
 LOG_PATH=         # 日志文件路径，默认为空（不生成日志文件）
 BIND=0.0.0.0      # 127.0.0.1
 PORT=3040
-ACCESS_TOKENS=    # 账号token池（eyJhbGci****，eyJhbGci****）
+TOKENS_FILE=      # 账号token文件，默认 tokens.yml
 PROXY=            # http://127.0.0.1:7890,http://127.0.0.1:7890 已支持多个代理（英文 "," 分隔）
 AUTHORIZATIONS=   # abc,bac (英文 "," 分隔)
 BASE_URL=         # 默认：https://chat.openai.com
@@ -27,7 +27,7 @@ BASE_URL=         # 默认：https://chat.openai.com
 
 ###### 也可使用与程序同目录下 `.env` 文件配置上述字段
 
-##### 若要使用ACCESS_TOKENS内的账号，AUTHORIZATIONS字段内必须配置`ac-`开头的AUTHORIZATION并使用ac-***调用本程序，若ACCESS_TOKENS无可用账号则默认使用免登
+##### 若要使用TOKENS_FILE内的账号，AUTHORIZATIONS字段内必须配置`ac-`开头的AUTHORIZATION并使用ac-***调用本程序，若ACCESS_TOKENS无可用账号则返回401错误，`tokens.yml`详见`tokens.template.yml`
 
 ## 三、部署
 
@@ -51,7 +51,11 @@ docker run -itd  --name=free-gpt3.5-2api -p 9846:3040 ghcr.io/aurorax-neo/free-g
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower -cR free-gpt3.5-2api --debug
 ```
 
-### 2.Koyeb部署
+### 2.Vercel部署
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/aurorax-neo/free-gpt3.5-2api&project-name=free-gpt3.5-2api&repository-name=free-gpt3.5-2api)
+
+### 3.Koyeb部署
 
 ###### 注意：`Regions`请选择支持`openai`免登的区域！！！现原生ip已不支持免登，请配置代理使用！！！
 
