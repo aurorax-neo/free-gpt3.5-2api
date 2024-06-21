@@ -10,6 +10,7 @@ import (
 	"free-gpt3.5-2api/common"
 	"free-gpt3.5-2api/config"
 	"github.com/aurorax-neo/tls_client_httpi"
+	"github.com/aurorax-neo/tls_client_httpi/tls_client"
 	"github.com/donnie4w/go-logger/logger"
 	"github.com/google/uuid"
 	"io"
@@ -154,7 +155,7 @@ func (f *FreeChat) GetHC(url string) (tls_client_httpi.Headers, tls_client_httpi
 
 func (f *FreeChat) newRequestClient() error {
 	// 请求客户端
-	f.Http = tls_client_httpi.NewClient(tls_client_httpi.NewClientOptions(300, common.GetClientProfile()))
+	f.Http = tls_client.NewClient(tls_client.NewClientOptions(300, common.GetClientProfile()))
 	if f.Http == nil {
 		errStr := fmt.Sprint("Http is nil")
 		logger.Debug(errStr)
