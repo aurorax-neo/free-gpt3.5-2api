@@ -15,19 +15,22 @@
 #### 环境变量
 
 ```
-LOG_LEVEL=info    # debug, info, warn, error
-LOG_PATH=         # 日志文件路径，默认为空（不生成日志文件）
-BIND=0.0.0.0      # 127.0.0.1
+LOG_LEVEL=info    	# debug, info, warn, error
+LOG_PATH=         	# 日志文件路径，默认为空（不生成日志文件）
+BIND=0.0.0.0      	# 127.0.0.1
 PORT=3040
-TOKENS_FILE=      # 账号token文件，默认 tokens.yml
-PROXY=            # http://127.0.0.1:7890,http://127.0.0.1:7890 已支持多个代理（英文 "," 分隔）
-AUTHORIZATIONS=   # abc,bac (英文 "," 分隔)
-BASE_URL=         # 默认：https://chat.openai.com
+TOKENS_FILE=      	# 账号token文件，默认 tokens.yml
+PROXY=            	# http://127.0.0.1:7890,http://127.0.0.1:7890 已支持多个代理（英文 "," 分隔）
+AUTHORIZATIONS=   	# abc,bac (英文 "," 分隔)  注：必须
+AT_AUTHORIZATIONS=  # abc,bac (英文 "," 分隔)  注：必须
+BASE_URL=         	# 默认：https://chatgpt.com
 ```
 
 ###### 也可使用与程序同目录下 `.env` 文件配置上述字段
 
-##### 若要使用TOKENS_FILE内的账号，AUTHORIZATIONS字段内必须配置`ac-`开头的AUTHORIZATION并使用ac-***调用本程序，若ACCESS_TOKENS无可用账号则返回401错误，`tokens.yml`详见`tokens.template.yml`
+- ##### 若要使用TOKENS_FILE内的账号，AUTHORIZATIONS字段内必须配置`ac-`开头的AUTHORIZATION并使用ac-***调用本程序，若ACCESS_TOKENS无可用账号则返回401错误，`tokens.yml`详见`tokens.template.yml`
+
+- ##### `AT_AUTHORIZATIONS `功能：防止使用求头access_token的API接口被刷，使用方式 `access_token#{abc}` ,{abc}替换为 `AT_AUTHORIZATIONS` 内的任意一项
 
 ## 三、部署
 
@@ -42,8 +45,10 @@ mkdir -p $PWD/free-gpt3.5-2api
 ##### 2.拉取镜像启动
 
 ```
-docker run -itd  --name=free-gpt3.5-2api -p 9846:3040 ghcr.io/aurorax-neo/free-gpt3.5-2api
+docker run -itd  --name=free-gpt3.5-2api -e AUTHORIZATIONS=abc,bac -e AT_AUTHORIZATIONS=abc,bac -p 9846:3040 ghcr.io/aurorax-neo/free-gpt3.5-2api
 ```
+
+###### 注意：-e AUTHORIZATIONS=abc,bac -e AT_AUTHORIZATIONS=abc,bac  请自行修改，避免接口被刷
 
 ##### 3.更新容器
 
@@ -64,6 +69,8 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtow
 ## 四、接口
 
 #### 1./v1/accTokens
+
+`Authorization`使用 `AUTHORIZATIONS`其中任意一个
 
 ```
 curl --location --request GET 'http://127.0.0.1:9846/v1/accTokens' \
