@@ -116,6 +116,20 @@ curl --location --request POST 'http://127.0.0.1:9846/v1/chat/completions' \
 }'
 ```
 
+## 五、模型映射
+
+```
+"gpt-3.5-turbo":          "text-davinci-002-render-sha",
+"gpt-3.5-turbo-16k":      "text-davinci-002-render-sha",
+"gpt-3.5-turbo-16k-0613": "text-davinci-002-render-sha",
+"gpt-3.5-turbo-0301":     "text-davinci-002-render-sha",
+"gpt-3.5-turbo-0613":     "text-davinci-002-render-sha",
+"gpt-3.5-turbo-1106":     "text-davinci-002-render-sha",
+"gpt-4o":                 "gpt-4o",
+"auto":                   "auto",
+"gpt-4o-av":              "gpt-4o-av",
+```
+
 ## 参考项目
 
 - https://github.com/aurora-develop/aurora
