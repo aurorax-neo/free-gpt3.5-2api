@@ -2,7 +2,6 @@ package common
 
 import (
 	"free-gpt3.5-2api/constant"
-	"free-gpt3.5-2api/fake_useragent"
 	"github.com/bogdanfinn/tls-client/profiles"
 	"math/rand"
 	"time"
@@ -12,7 +11,7 @@ const retry = 5
 
 var (
 	clientProfile   = getRandomClientProfile()
-	ua              = browser.Random()
+	ua              = FakeUaAgent()
 	updateThreshold = retry
 )
 
@@ -44,7 +43,7 @@ func GetClientProfile() profiles.ClientProfile {
 
 func GetUa() string {
 	if updateThreshold < 0 {
-		ua = browser.Random()
+		ua = FakeUaAgent()
 		updateThreshold = constant.ReTry
 	}
 	return ua
