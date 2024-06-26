@@ -256,3 +256,27 @@ func ReadFile(filePath string) ([]byte, error) {
 	}
 	return all, nil
 }
+
+// GetStrPreOrSuf 获取 指定字符串 前或后的字符串 0-原 1-前 1-后，没有返回原
+func GetStrPreOrSuf(str string, sep string, t int) string {
+	switch t {
+	case 0:
+		return str
+	case -1:
+		index := strings.Index(str, sep)
+		if index != -1 {
+			before := str[:index]
+			return before
+		}
+		return str
+	case 1:
+		index := strings.Index(str, sep)
+		if index != -1 {
+			after := str[index+len(sep):]
+			return after
+		}
+		return str
+	default:
+		return str
+	}
+}

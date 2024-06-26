@@ -32,7 +32,7 @@ func Completions(c *gin.Context) {
 	// 转换请求
 	ChatReq35 := types.ApiReq2ChatReq35(apiReq)
 	if ChatReq35.Model == "" {
-		errStr := "model is not allowed"
+		errStr := fmt.Sprint("Model is unsupported")
 		logger.Error(errStr)
 		common.ErrorResponse(c, http.StatusBadRequest, errStr, nil)
 		return
@@ -46,11 +46,15 @@ func Completions(c *gin.Context) {
 
 	}
 	token := c.Request.Header.Get("Authorization")
-	freeChat := FreeChat.GetFreeChat(token, constant.ReTry)
+	freeChat, err := FreeChat.GetFreeChat(token, constant.ReTry)
+	if err != nil {
+		logger.Error(err)
+		common.ErrorResponse(c, http.StatusInternalServerError, err.Error(), nil)
+		return
+	}
 	if freeChat == nil {
-		errStr := "please restart the program、change the IP address、use a proxy to try again."
-		logger.Error(errStr)
-		common.ErrorResponse(c, http.StatusUnauthorized, errStr, nil)
+		logger.Error(err)
+		common.ErrorResponse(c, http.StatusUnauthorized, err.Error(), nil)
 		return
 	}
 	headers, cookies := freeChat.GetHC(freeChat.ChatUrl)
@@ -81,7 +85,12 @@ func Completions(c *gin.Context) {
 		return
 	}
 	// 处理响应
-	content := HandlerResponse(c, apiReq, freeChat, response)
+	content, err := HandlerResponse(c, apiReq, freeChat, response)
+	if err != nil {
+		logger.Error(err)
+		common.ErrorResponse(c, http.StatusInternalServerError, "", err.Error())
+		return
+	}
 	// 流式返回
 	if apiReq.Stream {
 		c.String(200, "content: [DONE]\n\n")
@@ -159,7 +168,7 @@ func GetImageSource(freeChat *FreeChat.FreeChat, wg *sync.WaitGroup, url string,
 	}
 	imgSource[idx] = "[![image](" + fInfo.DownloadURL + " \"" + prompt + "\")](" + fInfo.DownloadURL + ")"
 }
-func HandlerResponse(c *gin.Context, apiReq *types.ApiReq, freeChat *FreeChat.FreeChat, resp *http.Response) string {
+func HandlerResponse(c *gin.Context, apiReq *types.ApiReq, freeChat *FreeChat.FreeChat, resp *http.Response) (string, error) {
 	// Create a bufio.Reader from the resp body
 	reader := bufio.NewReader(resp.Body)
 	// Read the resp byte by byte until a newline character is encountered
@@ -188,7 +197,7 @@ func HandlerResponse(c *gin.Context, apiReq *types.ApiReq, freeChat *FreeChat.Fr
 			if err == io.EOF {
 				break
 			}
-			return ""
+			return "", err
 		}
 		if len(line) < 6 {
 			continue
@@ -203,8 +212,7 @@ func HandlerResponse(c *gin.Context, apiReq *types.ApiReq, freeChat *FreeChat.Fr
 				continue
 			}
 			if chatResp.Error != nil {
-				common.ErrorResponse(c, 500, "ChatGPT error", nil)
-				return ""
+				return "", fmt.Errorf("ChatGPT error: %v", chatResp.Error)
 			}
 			if chatResp.ConversationId != convId {
 				if convId == "" {
@@ -301,7 +309,7 @@ func HandlerResponse(c *gin.Context, apiReq *types.ApiReq, freeChat *FreeChat.Fr
 			if apiReq.Stream {
 				_, err = c.Writer.WriteString(responseString)
 				if err != nil {
-					return ""
+					return "", err
 				}
 				c.Writer.Flush()
 			}
@@ -318,5 +326,5 @@ func HandlerResponse(c *gin.Context, apiReq *types.ApiReq, freeChat *FreeChat.Fr
 			}
 		}
 	}
-	return strings.Join(imgSource, "") + previousText.Text
+	return strings.Join(imgSource, "") + previousText.Text, nil
 }
