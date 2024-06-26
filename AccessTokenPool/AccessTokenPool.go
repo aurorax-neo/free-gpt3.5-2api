@@ -10,7 +10,7 @@ var (
 	once     sync.Once
 )
 
-const AccAuthAuthorizationPre = "ac"
+const AccAuthAuthorizationPre = "Bearer ac"
 
 type AccessTokenPool struct {
 	AccessTokens []*AccessToken

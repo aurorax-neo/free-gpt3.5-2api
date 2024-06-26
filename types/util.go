@@ -13,11 +13,14 @@ func MappingModel(model string) string {
 		"gpt-3.5-turbo-0301":     "text-davinci-002-render-sha",
 		"gpt-3.5-turbo-0613":     "text-davinci-002-render-sha",
 		"gpt-3.5-turbo-1106":     "text-davinci-002-render-sha",
+		"gpt-4o":                 "gpt-4o",
+		"auto":                   "auto",
+		"gpt-4o-av":              "gpt-4o-av",
 	}
 	if v, ok := modelMapping[model]; ok {
 		return v
 	}
-	return model
+	return ""
 }
 
 func GenerateID(length int) string {

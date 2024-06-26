@@ -57,37 +57,42 @@ type turnstile struct {
 	Required bool `json:"required"`
 }
 
-func GetFreeChat(token string, retry int) *FreeChat {
+func GetFreeChat(token string, retry int) (*FreeChat, error) {
 	// 判断是否为指定账号
 	if strings.HasPrefix(token, "Bearer eyJhbGciOiJSUzI1NiI") {
-		freeChat := newFreeChat(token)
+		auth := common.GetStrPreOrSuf(token, "#", 1)
+		if !common.IsStrInArray(auth, config.AtAuthorizations) {
+			return nil, fmt.Errorf("unauthorized, please add authkey in access_tokens (example: access_tokens#authkey)")
+		}
+		at := common.GetStrPreOrSuf(token, "#", -1)
+		freeChat, err := newFreeChat(at)
 		if freeChat == nil && retry > 0 {
 			return GetFreeChat(token, retry-1)
 		}
-		return freeChat
+		return freeChat, err
 	}
 	// 判断是否使用 AccessTokenPool
-	if strings.HasPrefix(token, "Bearer "+AccessTokenPool.AccAuthAuthorizationPre) && !AccessTokenPool.GetAccAuthPoolInstance().IsEmpty() {
-		token_ := AccessTokenPool.GetAccAuthPoolInstance().GetToken()
-		if token_ == "" {
-			return nil
+	if strings.HasPrefix(token, AccessTokenPool.AccAuthAuthorizationPre) && !AccessTokenPool.GetAccAuthPoolInstance().IsEmpty() {
+		at := AccessTokenPool.GetAccAuthPoolInstance().GetToken()
+		if at == "" {
+			return nil, fmt.Errorf("AccessTokenPool is Empty")
 		}
-		freeChat := newFreeChat(token_)
+		freeChat, err := newFreeChat(at)
 		if freeChat == nil && retry > 0 {
 			return GetFreeChat(token, retry-1)
 		}
-		return freeChat
+		return freeChat, err
 	}
 	// 返回免登 FreeChat 实例
-	freeChat := newFreeChat(token)
+	freeChat, err := newFreeChat(token)
 	if freeChat == nil && retry > 0 {
 		return GetFreeChat(token, retry-1)
 	}
-	return freeChat
+	return freeChat, err
 }
 
 // newFreeChat 创建 FreeChat 实例
-func newFreeChat(token string) *FreeChat {
+func newFreeChat(token string) (*FreeChat, error) {
 	// 创建 FreeChat 实例
 	freeChat := &FreeChat{
 		FreeAuth: &freeAuth{},
@@ -103,36 +108,33 @@ func newFreeChat(token string) *FreeChat {
 	err := freeChat.newRequestClient()
 	if err != nil {
 		logger.Debug(err.Error())
-		return nil
+		return nil, err
 	}
 	// 获取并设置代理
 	err = freeChat.getProxy()
 	if err != nil {
 		logger.Debug(err.Error())
-		return nil
+		return nil, err
 	}
 	// 获取cookies
 	if common.IsStrInArray(BaseUrl, OfficialBaseURLS) {
 		err = freeChat.getCookies()
 		if err != nil {
 			logger.Debug(err.Error())
-			return nil
+			return nil, err
 		}
 	}
 	// 获取 FreeAuth
 	err = freeChat.newFreeAuth()
 	if err != nil {
 		logger.Debug(err.Error())
-		return nil
+		return nil, err
 	}
-	return freeChat
+	return freeChat, nil
 }
 
 func (f *FreeChat) GetHC(url string) (tls_client_httpi.Headers, tls_client_httpi.Cookies) {
 	headers := tls_client_httpi.Headers{}
-	if f.AccAuth != "" {
-		headers.Set("Token", f.AccAuth)
-	}
 	headers.Set("accept", "*/*")
 	headers.Set("accept-language", "zh-CN,zh;q=0.9,zh-Hans;q=0.8,en;q=0.7")
 	headers.Set("oai-language", "en-US")
@@ -146,11 +148,10 @@ func (f *FreeChat) GetHC(url string) (tls_client_httpi.Headers, tls_client_httpi
 	headers.Set("sec-fetch-site", "same-origin")
 	headers.Set("user-agent", f.Ua)
 	headers.Set("Connection", "close")
-	cookies := tls_client_httpi.Cookies{}
-	for _, cookie := range f.Cookies {
-		cookies.Append(cookie)
+	if f.AccAuth != "" {
+		headers.Set("Authorization", f.AccAuth)
 	}
-	return headers, cookies
+	return headers, f.Cookies
 }
 
 func (f *FreeChat) newRequestClient() error {
@@ -185,9 +186,6 @@ func (f *FreeChat) getCookies() error {
 	headers, cookies := f.GetHC(BaseUrl)
 	// 设置请求头
 	headers.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
-	if f.AccAuth != "" {
-		headers.Set("Token", f.AccAuth)
-	}
 	// 发送 GET 请求 获取cookies
 	response, err := f.Http.Request(tls_client_httpi.GET, fmt.Sprint(BaseUrl, "/?oai-dm=1"), headers, cookies, nil)
 	if err != nil {
