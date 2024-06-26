@@ -61,7 +61,7 @@ func GetFreeChat(token string, retry int) (*FreeChat, error) {
 	// 判断是否为指定账号
 	if strings.HasPrefix(token, "Bearer eyJhbGciOiJSUzI1NiI") {
 		auth := common.GetStrPreOrSuf(token, "#", 1)
-		if !common.IsStrInArray(auth, config.AtAuthorizations) {
+		if !common.IsStrInArray(auth, config.AUTHORIZATIONS) {
 			return nil, fmt.Errorf("unauthorized, please add authkey in access_tokens (example: access_tokens#authkey)")
 		}
 		at := common.GetStrPreOrSuf(token, "#", -1)

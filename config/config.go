@@ -12,16 +12,15 @@ import (
 )
 
 var (
-	LogLevel         string
-	LogPath          string
-	LogFile          string
-	Bind             string
-	Port             string
-	Proxy            []string
-	TokensFile       string
-	AUTHORIZATIONS   []string
-	AtAuthorizations []string
-	BaseUrl          string
+	LogLevel       string
+	LogPath        string
+	LogFile        string
+	Bind           string
+	Port           string
+	Proxy          []string
+	TokensFile     string
+	AUTHORIZATIONS []string
+	BaseUrl        string
 )
 
 type Tokens struct {
@@ -113,14 +112,6 @@ func init() {
 	} else {
 		//以,分割 AUTH_TOKEN 并且为每个AUTH_TOKEN前面加上Bearer
 		AUTHORIZATIONS = common.SplitAndAddPre("Bearer ", authorizations, ",")
-	}
-	// AT_AUTHORIZATIONS
-	atAuthorizations := os.Getenv("AT_AUTHORIZATIONS")
-	if atAuthorizations == "" {
-		panic("please add AT_AUTHORIZATIONS in environment variable or .env file  (example: AT_AUTHORIZATIONS=authkey1,authkey2)")
-	} else {
-		//以,分割 AT_AUTH_TOKEN 并且为每个AT_AUTH_TOKEN前面加上Bearer
-		AtAuthorizations = common.SplitAndAddPre("", atAuthorizations, ",")
 	}
 	// BASE_URL
 	BaseUrl = os.Getenv("BASE_URL")
