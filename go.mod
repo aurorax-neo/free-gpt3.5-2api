@@ -5,7 +5,6 @@ go 1.22.0
 toolchain go1.22.3
 
 require (
-	github.com/EDDYCJY/fake-useragent v0.2.0
 	github.com/aurorax-neo/tls_client_httpi v0.0.0-20240621052611-65c63fa600d4
 	github.com/bogdanfinn/tls-client v1.7.5
 	github.com/donnie4w/go-logger v0.25.3
@@ -18,8 +17,6 @@ require (
 )
 
 require (
-	github.com/Danny-Dasilva/CycleTLS/cycletls v1.0.26 // indirect
-	github.com/Danny-Dasilva/fhttp v0.0.0-20240217042913-eeeb0b347ce1 // indirect
 	github.com/PuerkitoBio/goquery v1.9.2 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
@@ -35,7 +32,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.14.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
-	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
@@ -44,7 +40,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/quic-go/quic-go v0.45.0 // indirect
-	github.com/refraction-networking/utls v1.6.2 // indirect
 	github.com/tam7t/hpkp v0.0.0-20160821193359-2b70b4024ed5 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
@@ -54,5 +49,4 @@ require (
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
-	h12.io/socks v1.0.3 // indirect
 )

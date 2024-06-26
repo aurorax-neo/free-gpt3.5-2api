@@ -2,7 +2,7 @@ package common
 
 import (
 	"free-gpt3.5-2api/constant"
-	"github.com/EDDYCJY/fake-useragent"
+	"free-gpt3.5-2api/fake_useragent"
 	"github.com/bogdanfinn/tls-client/profiles"
 	"math/rand"
 	"time"
