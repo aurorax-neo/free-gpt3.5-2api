@@ -22,7 +22,6 @@ PORT=3040
 TOKENS_FILE=      	# 账号token文件，默认 tokens.yml
 PROXY=            	# http://127.0.0.1:7890,http://127.0.0.1:7890 已支持多个代理（英文 "," 分隔）
 AUTHORIZATIONS=   	# abc,bac (英文 "," 分隔)  注：必须
-AT_AUTHORIZATIONS=  # abc,bac (英文 "," 分隔)  注：必须
 BASE_URL=         	# 默认：https://chatgpt.com
 ```
 
@@ -30,7 +29,7 @@ BASE_URL=         	# 默认：https://chatgpt.com
 
 - ##### 若要使用TOKENS_FILE内的账号，AUTHORIZATIONS字段内必须配置`ac-`开头的AUTHORIZATION并使用ac-***调用本程序，若ACCESS_TOKENS无可用账号则返回401错误，`tokens.yml`详见`tokens.template.yml`
 
-- ##### `AT_AUTHORIZATIONS `功能：防止使用求头access_token的API接口被刷，使用方式 `access_token#{abc}` ,{abc}替换为 `AT_AUTHORIZATIONS` 内的任意一项
+- ##### `AUTHORIZATIONS `功能（access_token）：防止使用求头access_token的API接口被刷，使用方式 `access_token#{abc}` ,{abc}替换为 `AUTHORIZATIONS` 内的任意一项
 
 ## 三、部署
 
@@ -45,10 +44,10 @@ mkdir -p $PWD/free-gpt3.5-2api
 ##### 2.拉取镜像启动
 
 ```
-docker run -itd  --name=free-gpt3.5-2api -e AUTHORIZATIONS=abc,bac -e AT_AUTHORIZATIONS=abc,bac -p 9846:3040 ghcr.io/aurorax-neo/free-gpt3.5-2api
+docker run -itd  --name=free-gpt3.5-2api -e AUTHORIZATIONS=abc,bac -p 9846:3040 ghcr.io/aurorax-neo/free-gpt3.5-2api
 ```
 
-###### 注意：-e AUTHORIZATIONS=abc,bac -e AT_AUTHORIZATIONS=abc,bac  请自行修改，避免接口被刷
+###### 注意：-e AUTHORIZATIONS=abc,bac 请自行修改，避免接口被刷
 
 ##### 3.更新容器
 
