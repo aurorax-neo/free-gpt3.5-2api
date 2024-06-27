@@ -135,21 +135,21 @@ func newFreeChat(token string) (*FreeChat, error) {
 
 func (f *FreeChat) GetHC(url string) (tls_client_httpi.Headers, tls_client_httpi.Cookies) {
 	headers := tls_client_httpi.Headers{}
-	headers.Set("accept", "*/*")
-	headers.Set("accept-language", "zh-CN,zh;q=0.9,zh-Hans;q=0.8,en;q=0.7")
-	headers.Set("oai-language", "en-US")
-	headers.Set("origin", common.GetOrigin(url))
-	headers.Set("referer", common.GetOrigin(url))
-	headers.Set("sec-ch-ua", `"Microsoft Edge";v="123", "Not:A-Brand";v="8", "Chromium";v="123"`)
-	headers.Set("sec-ch-ua-mobile", "?0")
-	headers.Set("sec-ch-ua-platform", `"Windows"`)
-	headers.Set("sec-fetch-dest", "empty")
-	headers.Set("sec-fetch-mode", "cors")
-	headers.Set("sec-fetch-site", "same-origin")
-	headers.Set("user-agent", f.Ua)
-	headers.Set("Connection", "close")
+	headers.Set(strings.ToLower("accept"), "*/*")
+	headers.Set(strings.ToLower("accept-language"), "zh-CN,zh;q=0.9,zh-Hans;q=0.8,en;q=0.7")
+	headers.Set(strings.ToLower("oai-language"), "en-US")
+	headers.Set(strings.ToLower("origin"), common.GetOrigin(url))
+	headers.Set(strings.ToLower("referer"), common.GetOrigin(url))
+	headers.Set(strings.ToLower("sec-ch-ua"), `"Microsoft Edge";v="123", "Not:A-Brand";v="8", "Chromium";v="123"`)
+	headers.Set(strings.ToLower("sec-ch-ua-mobile"), "?0")
+	headers.Set(strings.ToLower("sec-ch-ua-platform"), `"Windows"`)
+	headers.Set(strings.ToLower("sec-fetch-dest"), "empty")
+	headers.Set(strings.ToLower("sec-fetch-mode"), "cors")
+	headers.Set(strings.ToLower("sec-fetch-site"), "same-origin")
+	headers.Set(strings.ToLower("user-agent"), f.Ua)
+	headers.Set(strings.ToLower("Connection"), "close")
 	if f.AccAuth != "" {
-		headers.Set("Authorization", f.AccAuth)
+		headers.Set(strings.ToLower("Authorization"), f.AccAuth)
 	}
 	return headers, f.Cookies
 }
@@ -185,7 +185,7 @@ func (f *FreeChat) getCookies() error {
 	// 获取请求头和cookies
 	headers, cookies := f.GetHC(BaseUrl)
 	// 设置请求头
-	headers.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
+	headers.Set(strings.ToLower("Accept"), "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
 	// 发送 GET 请求 获取cookies
 	response, err := f.Http.Request(tls_client_httpi.GET, fmt.Sprint(BaseUrl, "/?oai-dm=1"), headers, cookies, nil)
 	if err != nil {
@@ -200,11 +200,11 @@ func (f *FreeChat) getCookies() error {
 	// 获取cookies
 	cks := response.Cookies()
 	for i, cookie := range cks {
-		if cookie.Name == "oai-did" {
+		if strings.ToLower(cookie.Name) == strings.ToLower("oai-did") {
 			f.FreeAuth.OaiDeviceId = cookie.Value
 			cookies = append(cks[:i], cks[i+1:]...)
 		}
-		if cookie.Name == "__Secure-next-auth.callback-url" {
+		if strings.ToLower(cookie.Name) == strings.ToLower("__Secure-next-auth.callback-url") {
 			cookie.Value = BaseUrl
 		}
 	}
@@ -222,8 +222,8 @@ func (f *FreeChat) newFreeAuth() error {
 	body := bytes.NewBufferString(`{"p":"gAAAAACWzI0MTIsIlRodSBNYXkgMjMgMjAyNCAxNjozNjoyNyBHTVQrMDgwMCAoR01UKzA4OjAwKSIsNDI5NDcwNTE1MiwwLCJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvMTIyLjAuMC4wIFNhZmFyaS81MzcuMzYiLCJodHRwczovL2Nkbi5vYWlzdGF0aWMuY29tL19uZXh0L3N0YXRpYy9jaHVua3Mvd2VicGFjay01YzQ4NDI4ZTBlZTgxMTBlLmpzP2RwbD00ODExZmQxYzk0YjU1MGM4ZjAzZmNjODYzZWU2YzFhOTk5NDBlZmM1IiwiZHBsPTQ4MTFmZDFjOTRiNTUwYzhmMDNmY2M4NjNlZTZjMWE5OTk0MGVmYzUiLCJ6aC1DTiIsInpoLUNOLHpoLHpoLUhhbnMsZW4iLDIzNiwiZGV2aWNlTWVtb3J54oiSOCIsIl9yZWFjdExpc3RlbmluZzh6MmcweHF4M2Z4IiwiX19SRUFDVF9JTlRMX0NPTlRFWFRfXyIsNzIzLjM5OTk5OTk5ODUwOTld"}`)
 	headers, cookies := f.GetHC(FreeAuthUrl)
 	// 设置请求头
-	headers.Set("Content-Type", "application/json")
-	headers.Set("oai-device-id", f.FreeAuth.OaiDeviceId)
+	headers.Set(strings.ToLower("Content-Type"), "application/json")
+	headers.Set(strings.ToLower("oai-device-id"), f.FreeAuth.OaiDeviceId)
 	// 发送 POST 请求
 	response, err := f.Http.Request(tls_client_httpi.POST, FreeAuthUrl, headers, cookies, body)
 	if err != nil {
@@ -250,7 +250,7 @@ func (f *FreeChat) newFreeAuth() error {
 	}
 	// ProofWork
 	if f.FreeAuth.ProofWork.Required {
-		f.FreeAuth.ProofWork.Ospt = ProofWork.CalcProofToken(f.FreeAuth.ProofWork.Seed, f.FreeAuth.ProofWork.Difficulty, headers.Get("User-Agent"))
+		f.FreeAuth.ProofWork.Ospt = ProofWork.CalcProofToken(f.FreeAuth.ProofWork.Seed, f.FreeAuth.ProofWork.Difficulty, headers.Get(strings.ToLower("User-Agent")))
 		if f.FreeAuth.ProofWork.Ospt == "" {
 			errStr := fmt.Sprint("ProofWork Failed")
 			return fmt.Errorf(errStr)

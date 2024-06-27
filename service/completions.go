@@ -59,13 +59,13 @@ func Completions(c *gin.Context) {
 	}
 	headers, cookies := freeChat.GetHC(freeChat.ChatUrl)
 	// 设置请求头
-	headers.Set("Accept-Encoding", "gzip, deflate, br")
-	headers.Set("Accept", "text/event-stream")
-	headers.Set("Content-Type", "application/json")
-	headers.Set("oai-device-id", freeChat.FreeAuth.OaiDeviceId)
-	headers.Set("openai-sentinel-chat-requirements-token", freeChat.FreeAuth.Token)
+	headers.Set(strings.ToLower("Accept-Encoding"), "gzip, deflate, br")
+	headers.Set(strings.ToLower("Accept"), "text/event-stream")
+	headers.Set(strings.ToLower("Content-Type"), "application/json")
+	headers.Set(strings.ToLower("oai-device-id"), freeChat.FreeAuth.OaiDeviceId)
+	headers.Set(strings.ToLower("openai-sentinel-chat-requirements-token"), freeChat.FreeAuth.Token)
 	if freeChat.FreeAuth.ProofWork.Required {
-		headers.Set("Openai-Sentinel-Proof-Token", freeChat.FreeAuth.ProofWork.Ospt)
+		headers.Set(strings.ToLower("Openai-Sentinel-Proof-Token"), freeChat.FreeAuth.ProofWork.Ospt)
 	}
 	// 发送请求
 	response, err := freeChat.Http.Request(tls_client_httpi.POST, freeChat.ChatUrl, headers, cookies, body)
