@@ -147,7 +147,6 @@ func (f *FreeChat) GetHC(url string) (tls_client_httpi.Headers, tls_client_httpi
 	headers.Set(strings.ToLower("sec-fetch-mode"), "cors")
 	headers.Set(strings.ToLower("sec-fetch-site"), "same-origin")
 	headers.Set(strings.ToLower("user-agent"), f.Ua)
-	headers.Set(strings.ToLower("Connection"), "close")
 	if f.AccAuth != "" {
 		headers.Set(strings.ToLower("Authorization"), f.AccAuth)
 	}

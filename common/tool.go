@@ -25,7 +25,6 @@ func getRandomClientProfile() profiles.ClientProfile {
 	clientProfiles := []profiles.ClientProfile{
 		profiles.Chrome_110,
 		profiles.Okhttp4Android13,
-		profiles.CloudflareCustom,
 		profiles.Opera_90,
 	}
 	// 随机选择一个
