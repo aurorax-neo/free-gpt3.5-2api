@@ -55,11 +55,47 @@ docker run -itd  --name=free-gpt3.5-2api -e AUTHORIZATIONS=abc,bac -p 9846:3040 
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower -cR free-gpt3.5-2api --debug
 ```
 
-### 2.Vercel部署
+### 2.docker-compose部署
+
+##### 1.快速启动
+
+###### 把本仓库根目录的compose.yaml文件下载到你的电脑(最好为它建立一个free-gpt3.5-2api文件夹，放在文件夹里，这样防止多个compose文件冲突)，在compose.yaml目录下运行如下命令
+
+```
+docker compose up -d
+```
+
+##### 2.更新容器
+
+```
+docker compose pull
+docker compose up -d
+```
+
+##### 3.配置文件说明
+
+```
+services:
+  free-gpt3.5-2api:
+    container_name: free-gpt3.5-2api        #这里写你想起的容器名称
+    image: ghcr.io/aurorax-neo/free-gpt3.5-2api
+    ports:
+      - 7846:3040       #docker默认不经过ufw和firewall,如果想要不暴露端口到外网，在端口前加127.0.0.1,像这样 127.0.0.1:7846:3040
+      					#7846:3040 前面是主机端口,可以自定义，后面是容器端口不要修改
+    
+    restart: unless-stopped       #容器停止和启动须经过手动操作，不会随docker自启
+    environment:
+      - AUTHORIZATIONS=abc,bac        #注意：“=”后的内容请自行修改，避免接口被刷   
+
+```
+
+###### 
+
+### 3.Vercel部署
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/aurorax-neo/free-gpt3.5-2api&project-name=free-gpt3.5-2api&repository-name=free-gpt3.5-2api)
 
-### 3.Koyeb部署
+### 4.Koyeb部署
 
 ###### 注意：`Regions`请选择支持`openai`免登的区域！！！现原生ip已不支持免登，请配置代理使用！！！
 
