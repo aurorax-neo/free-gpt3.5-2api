@@ -1,0 +1,9 @@
+services:
+  free-gpt3.5-2api:
+    container_name: free-gpt3.5-2api        #这里写你想起的容器名称
+    image: ghcr.io/aurorax-neo/free-gpt3.5-2api
+    ports:
+      - 7846:3040       #docker默认不经过ufw和firewall,如果想要不暴露端口到外网，在端口前加127.0.0.1,像这样 127.0.0.1:7846:3040。前面是主机端口,可以自定义，后面是容器端口不要修改。
+    restart: unless-stopped       #容器停止和启动须经过手动操作，不会随docker自启
+    environment:
+      - AUTHORIZATIONS=abc,bac        #注意：“=”后的内容请自行修改，避免接口被刷  
