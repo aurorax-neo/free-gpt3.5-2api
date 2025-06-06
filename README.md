@@ -170,3 +170,5 @@ curl --location --request POST 'http://127.0.0.1:9846/v1/chat/completions' \
 - https://github.com/aurora-develop/aurora
 
 - https://github.com/xqdoo00o/ChatGPT-to-API
+
+[![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
