@@ -172,3 +172,13 @@ curl --location --request POST 'http://127.0.0.1:9846/v1/chat/completions' \
 - https://github.com/xqdoo00o/ChatGPT-to-API
 
 [![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
+
+## Sponsor
+
+<a href="https://edgeone.ai/?from=github"><img width="200" src="https://edgeone.ai/media/34fe3a45-492d-4ea4-ae5d-ea1087ca7b4b.png"></a>
+
+CDN acceleration and security protection for this project are sponsored by Tencent EdgeOne.
+
+## 🌟 Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=aurorax-neo/free-gpt3.5-2api&type=Date)](https://star-history.com/#aurorax-neo/free-gpt3.5-2api&Date)
